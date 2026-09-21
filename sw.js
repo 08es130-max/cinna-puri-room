@@ -1,4 +1,4 @@
-const C='cinna-puri-room-v054';const A=['./','./index.html','./manifest.webmanifest','./assets/cinnamoroll.webp','./assets/pompompurin.webp','./assets/outfits/cinna_sailor.webp','./assets/outfits/puri_parka.webp'];
+const C='cinna-puri-room-v060';const A=['./','./index.html','./manifest.webmanifest','./assets/cinnamoroll.webp','./assets/pompompurin.webp','./assets/outfits/cinna_sailor.webp','./assets/outfits/puri_parka.webp'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(A)))});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;if(e.request.mode==='navigate'){e.respondWith(fetch(e.request).then(r=>{const x=r.clone();caches.open(C).then(c=>c.put('./index.html',x));return r}).catch(()=>caches.match('./index.html')));return}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});
