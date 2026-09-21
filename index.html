@@ -19,8 +19,18 @@
 .char .layerhand.right.cinna{clip-path:ellipse(10% 13% at 57% 61%)}
 .char .layerhand.left.puri{clip-path:ellipse(9% 13% at 34% 64%)}
 .char .layerhand.right.puri{clip-path:ellipse(9% 13% at 66% 64%)}
-</style><meta name="deploy-revision" content="053-layered-dress"></head><body><div class="app">
-<header><div class="row"><div><b>なかよしるーむ</b><div class="small">ばーじょん 0.5.3</div></div><div class="coin">🪙 <span id="coins">30</span></div></div><div class="meters"><div class="meter">☁️ しなもん<div class="bar"><i id="bc"></i></div><span id="lc">れべる 1</span></div><div class="meter">🍮 ぷりん<div class="bar"><i id="bp"></i></div><span id="lp">れべる 1</span></div></div></header>
+
+/* 0.5.4 screenshot-calibrated dress layers */
+.dresspreview:not(.puri) .outfit-img{width:116px!important;top:76px!important}
+.dresspreview.puri .outfit-img{width:132px!important;top:82px!important}
+.char[data-char="cinna"] .outfit-img{width:38.67%!important;top:38%!important}
+.char[data-char="puri"] .outfit-img{width:44%!important;top:41%!important}
+.dresspreview .layerhand.left.cinna,.char .layerhand.left.cinna{clip-path:ellipse(6.5% 9% at 46% 58%)!important}
+.dresspreview .layerhand.right.cinna,.char .layerhand.right.cinna{clip-path:ellipse(6.5% 9% at 54% 58%)!important}
+.dresspreview .layerhand.left.puri,.char .layerhand.left.puri{clip-path:ellipse(5.5% 10% at 32% 64%)!important}
+.dresspreview .layerhand.right.puri,.char .layerhand.right.puri{clip-path:ellipse(5.5% 10% at 68% 64%)!important}
+</style><meta name="deploy-revision" content="054-screenshot-calibration"></head><body><div class="app">
+<header><div class="row"><div><b>なかよしるーむ</b><div class="small">ばーじょん 0.5.4</div></div><div class="coin">🪙 <span id="coins">30</span></div></div><div class="meters"><div class="meter">☁️ しなもん<div class="bar"><i id="bc"></i></div><span id="lc">れべる 1</span></div><div class="meter">🍮 ぷりん<div class="bar"><i id="bp"></i></div><span id="lp">れべる 1</span></div></div></header>
 <main>
 <section id="home" class="screen active"><div class="room"><div class="rug"></div><div id="bubble" class="bubble"></div><div id="mealpick" class="mealpick"><div style="font-weight:700;margin-bottom:7px">なにを たべる？</div><div class="mealfoods"><button class="mealfood" data-food="🍙" data-name="おにぎり"><span>🍙</span>おにぎり</button><button class="mealfood" data-food="🍞" data-name="ぱん"><span>🍞</span>ぱん</button><button class="mealfood" data-food="🥕" data-name="にんじん"><span>🥕</span>にんじん</button><button class="mealfood" data-food="🍎" data-name="りんご"><span>🍎</span>りんご</button></div></div><button class="char c1" data-char="cinna"><img class="character-img" id="cinnaImg" src="./assets/cinnamoroll.webp" alt="しなもろーる"><div class="name">しなもろーる</div></button><button class="char c2" data-char="puri"><img class="character-img" id="puriImg" src="./assets/pompompurin.webp" alt="ぽむぽむぷりん"><div class="name">ぽむぽむぷりん</div></button></div><div class="card"><b>きょうのふたり</b><p class="small" id="timeMsg"></p><div class="grid2"><button class="btn" id="food">🍚<br>ごはん</button><button class="btn" id="snack">🍪<br>おやつ</button><button class="btn" id="pet">🫳<br>なでる</button><button class="btn" data-go="life">🎁<br>ぷれぜんと</button></div></div></section>
 <section id="talk" class="screen"><div class="card"><b>おはなし</b><div class="grid2" style="margin-top:10px"><button class="btn talkwho selected" data-who="cinna">しなもろーる</button><button class="btn talkwho" data-who="puri">ぽむぽむぷりん</button></div><p id="talkText">きょうはどんないちにちになりそうかな？</p><div class="grid2"><button class="item topic" data-topic="day">きょうのこと</button><button class="item topic" data-topic="food">たべもの</button><button class="item topic" data-topic="dream">ゆめのはなし</button><button class="item topic" data-topic="friend">なかよしのはなし</button></div></div></section>
