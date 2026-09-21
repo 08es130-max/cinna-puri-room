@@ -45,8 +45,8 @@
 .ward-choice.selected{border-color:#55b7f5;background:#cfeeff}.puri-panel .ward-choice.selected{border-color:#ffbd32;background:#fff0a9}
 .ward-choice img{width:100%;height:74px;object-fit:contain;display:block}.ward-choice span{font-size:13px}
 @media(max-width:600px){.ward-grid{grid-template-columns:1fr}.ward-room{height:235px}.ward-head span{display:none}}
-</style><meta name="deploy-revision" content="060-dress-ui"></head><body><div class="app">
-<header><div class="row"><div><b>なかよしるーむ</b><div class="small">ばーじょん 0.6.0</div></div><div class="coin">🪙 <span id="coins">30</span></div></div><div class="meters"><div class="meter">☁️ しなもん<div class="bar"><i id="bc"></i></div><span id="lc">れべる 1</span></div><div class="meter">🍮 ぷりん<div class="bar"><i id="bp"></i></div><span id="lp">れべる 1</span></div></div></header>
+</style><meta name="deploy-revision" content="061-cinna-sailor"></head><body><div class="app">
+<header><div class="row"><div><b>なかよしるーむ</b><div class="small">ばーじょん 0.6.1</div></div><div class="coin">🪙 <span id="coins">30</span></div></div><div class="meters"><div class="meter">☁️ しなもん<div class="bar"><i id="bc"></i></div><span id="lc">れべる 1</span></div><div class="meter">🍮 ぷりん<div class="bar"><i id="bp"></i></div><span id="lp">れべる 1</span></div></div></header>
 <main>
 <section id="home" class="screen active"><div class="room"><div class="rug"></div><div id="bubble" class="bubble"></div><div id="mealpick" class="mealpick"><div style="font-weight:700;margin-bottom:7px">なにを たべる？</div><div class="mealfoods"><button class="mealfood" data-food="🍙" data-name="おにぎり"><span>🍙</span>おにぎり</button><button class="mealfood" data-food="🍞" data-name="ぱん"><span>🍞</span>ぱん</button><button class="mealfood" data-food="🥕" data-name="にんじん"><span>🥕</span>にんじん</button><button class="mealfood" data-food="🍎" data-name="りんご"><span>🍎</span>りんご</button></div></div><button class="char c1" data-char="cinna"><img class="character-img" id="cinnaImg" src="./assets/cinnamoroll.webp" alt="しなもろーる"><div class="name">しなもろーる</div></button><button class="char c2" data-char="puri"><img class="character-img" id="puriImg" src="./assets/pompompurin.webp" alt="ぽむぽむぷりん"><div class="name">ぽむぽむぷりん</div></button></div><div class="card"><b>きょうのふたり</b><p class="small" id="timeMsg"></p><div class="grid2"><button class="btn" id="food">🍚<br>ごはん</button><button class="btn" id="snack">🍪<br>おやつ</button><button class="btn" id="pet">🫳<br>なでる</button><button class="btn" data-go="life">🎁<br>ぷれぜんと</button></div></div></section>
 <section id="talk" class="screen"><div class="card"><b>おはなし</b><div class="grid2" style="margin-top:10px"><button class="btn talkwho selected" data-who="cinna">しなもろーる</button><button class="btn talkwho" data-who="puri">ぽむぽむぷりん</button></div><p id="talkText">きょうはどんないちにちになりそうかな？</p><div class="grid2"><button class="item topic" data-topic="day">きょうのこと</button><button class="item topic" data-topic="food">たべもの</button><button class="item topic" data-topic="dream">ゆめのはなし</button><button class="item topic" data-topic="friend">なかよしのはなし</button></div></div></section>
@@ -67,12 +67,12 @@
 </script><script>
 (()=>{
  const defs={
-  cinna:[['','はだか','./assets/cinnamoroll.webp'],['sailor','せーらー','./assets/cinnamoroll.webp'],['dress','どれす','./assets/cinnamoroll.webp'],['parka','ぱーかー','./assets/cinnamoroll.webp'],['sleep','ねむねむ','./assets/cinnamoroll.webp'],['prince','ぷりんす','./assets/cinnamoroll.webp']],
+  cinna:[['','はだか','./assets/cinnamoroll.webp'],['sailor','せーらー','./assets/cinna-sailor.webp'],['dress','どれす','./assets/cinnamoroll.webp'],['parka','ぱーかー','./assets/cinnamoroll.webp'],['sleep','ねむねむ','./assets/cinnamoroll.webp'],['prince','ぷりんす','./assets/cinnamoroll.webp']],
   puri:[['','はだか','./assets/pompompurin.webp'],['detective','たんてい','./assets/pompompurin.webp'],['cook','こっく','./assets/pompompurin.webp'],['parka','ぱーかー','./assets/pompompurin.webp'],['santa','さんた','./assets/pompompurin.webp'],['bee','みつばち','./assets/pompompurin.webp']]
  };
  function draw(c){
   const box=document.getElementById(c+'WardChoices'),sprite=document.getElementById(c+'DressSprite'); if(!box||!sprite)return;
-  const key='ward_'+c,cur=localStorage.getItem(key)||'';
+  const key='ward_'+c,cur=localStorage.getItem(key)||'';const chosen=defs[c].find(x=>x[0]===cur)||defs[c][0];sprite.src=chosen[2];const room=document.querySelector('.char[data-char="'+c+'"] img');if(room)room.src=chosen[2];
   box.innerHTML='';
   defs[c].forEach(([id,name,base])=>{const b=document.createElement('button');b.className='ward-choice'+(id===cur?' selected':'');b.innerHTML='<img src="'+base+'" alt=""><span>'+name+'</span>';b.onclick=()=>{localStorage.setItem(key,id);sprite.src=base;document.querySelectorAll('.char[data-char="'+c+'"] img:not(.outfit-img):not(.layerhand)').forEach(x=>x.src=base);draw(c)};box.appendChild(b)});
  }
