@@ -14,16 +14,16 @@ const rows={
 };
 const number=[...'123456789','10'];
 const numberPaths={
- '1':['M330 270 Q385 245 430 190 L430 830'],
- '2':['M270 315 C290 180 535 155 650 245 C800 365 610 515 300 805 L735 805'],
- '3':['M285 245 C430 150 690 175 700 320 C705 430 585 480 465 490 C610 490 735 555 720 690 C700 865 415 880 275 760'],
- '4':['M610 170 L265 610 L760 610','M610 170 L610 850'],
- '5':['M685 205 L340 205 L315 470 C430 420 675 430 710 605 C750 805 505 900 285 790'],
- '6':['M655 215 C430 180 270 395 270 620 C270 850 600 900 710 700 C810 515 555 390 320 535'],
- '7':['M255 220 L745 220','M700 245 C575 415 475 600 420 845'],
- '8':['M430 485 C250 405 280 180 505 190 C725 200 745 430 565 500 C760 570 735 850 495 860 C235 870 215 590 430 485'],
- '9':['M675 505 C575 620 305 595 295 390 C285 175 620 125 710 330 C800 535 660 775 390 860'],
- '10':['M190 270 Q235 245 275 190 L275 830','M655 190 C430 190 430 830 655 830 C880 830 880 190 655 190']
+ '1':['M365 290 L470 205 L470 825'],
+ '2':['M300 330 C330 180 650 175 710 315 C770 455 610 560 305 805 L735 805'],
+ '3':['M305 255 C455 155 700 190 700 335 C700 445 590 500 455 500','M455 500 C610 500 730 565 710 705 C685 875 415 885 290 770'],
+ '4':['M620 190 L285 610 L760 610','M620 190 L620 845'],
+ '5':['M700 205 L330 205 L305 475','M305 475 C405 405 660 425 710 600 C770 815 500 900 285 785'],
+ '6':['M675 225 C465 165 285 360 285 610 C285 845 610 900 720 705 C815 535 565 395 320 535'],
+ '7':['M275 220 L755 220','M710 245 C590 420 490 615 430 845'],
+ '8':['M500 205 C335 205 285 345 365 445 C430 525 575 555 655 650 C750 765 650 865 500 865 C345 865 250 760 345 645 C425 548 570 520 640 435 C720 335 660 205 500 205'],
+ '9':['M685 505 C600 625 325 610 300 400 C275 190 605 130 710 320 C820 520 690 770 395 860'],
+ '10':['M180 290 L270 215 L270 825','M650 205 C475 205 430 355 430 515 C430 680 475 830 650 830 C825 830 870 680 870 515 C870 355 825 205 650 205']
 };
 let mode='number',index=0,learnMode='sequence',drawing=false,last=null,demoToken=0,svgHost=null,ink=null,inkCtx=null,label=null,sub=null,controls=null,wrap=null;
 
@@ -57,8 +57,9 @@ function currentChar(){return mode==='number'?number[index]:kana[mode][index]}
 function baseNumberSvg(ch){
  const paths=numberPaths[ch]||[];
  return '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">'+
- '<text x="512" y="720" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Hiragino Sans,Yu Gothic,sans-serif" font-size="'+(ch==='10'?620:760)+'" font-weight="700" fill="none" stroke="#c9d6dc" stroke-width="10">'+ch+'</text>'+
- '<g data-demo-strokes fill="none" stroke="#9dcfe8" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" opacity=".42">'+
+ '<g data-number-guide fill="none" stroke="#cfdce2" stroke-width="78" stroke-linecap="round" stroke-linejoin="round" opacity=".62">'+
+ paths.map(d=>'<path d="'+d+'"/>').join('')+'</g>'+
+ '<g data-demo-strokes fill="none" stroke="#55bff5" stroke-width="72" stroke-linecap="round" stroke-linejoin="round">'+
  paths.map((d,i)=>'<path data-stroke="'+i+'" d="'+d+'"/>').join('')+'</g></svg>';
 }
 function prepareKanaSvg(xml){
@@ -90,10 +91,10 @@ async function demo(){
  if(mode==='number'){
   svgHost.innerHTML=baseNumberSvg(ch);
   const strokes=[...svgHost.querySelectorAll('[data-demo-strokes]>path')];
-  strokes.forEach(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='72';p.style.strokeDasharray=len;p.style.strokeDashoffset=len});
-  for(const p of strokes){
+  const info=strokes.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='72';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
+  for(const {p,len} of info){
    if(token!==demoToken)break;
-   const len=p.getTotalLength(),ms=Math.max(650,Math.min(1500,len*1.45));
+   const ms=Math.max(650,Math.min(1500,len*1.45));
    await p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:ms,easing:'linear',fill:'forwards'}).finished.catch(()=>{});
    await sleep(180);
   }
@@ -101,14 +102,16 @@ async function demo(){
   const xml=await getKanaSvg(mode,ch);if(token!==demoToken){b.disabled=false;b.textContent='おてほん';return}
   svgHost.innerHTML=prepareKanaSvg(xml);
   const group=svgHost.querySelector('[data-strokesvg="strokes"]');
-  const strokes=group?[...group.children]:[];
-  for(const stroke of strokes){
-   if(token!==demoToken)break;
+  const strokeGroups=group?[...group.children]:[];
+  const prepared=strokeGroups.map(stroke=>{
    const ps=stroke.matches('path')?[stroke]:[...stroke.querySelectorAll('path')];
-   const jobs=ps.map(p=>{
-    const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;
-    return p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:Math.max(600,Math.min(1500,len*1.5)),easing:'linear',fill:'forwards'}).finished.catch(()=>{});
-   });
+   const items=ps.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
+   return items;
+  });
+  await new Promise(requestAnimationFrame);
+  for(const items of prepared){
+   if(token!==demoToken)break;
+   const jobs=items.map(({p,len})=>p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:Math.max(600,Math.min(1500,len*1.5)),easing:'linear',fill:'forwards'}).finished.catch(()=>{}));
    await Promise.all(jobs);await sleep(170);
   }
  }
