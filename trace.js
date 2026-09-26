@@ -168,12 +168,16 @@ function chooseWordCategory(){
  box.append(t,grid,voice);game.appendChild(box);
 }
 function cleanSpokenText(t){
- /* おんせいで漢字に変換されても、書く画面には漢字を出さない */
- let x=(t||'').trim().replace(/[\s　、。,.!?！？「」『』（）()]/g,'');
- const kanji=/[々〇〆ヶ一-龯]/;
- if(kanji.test(x))return '';
- x=[...x].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('');
- return x.slice(0,12);
+ return (t||'').trim().replace(/[\\s　、。,.!?！？「」『』（）()]/g,'').slice(0,12);
+}
+function kanaFromSpeechResult(result){
+ const candidates=[];
+ for(let i=0;i<result.length;i++)candidates.push((result[i]&&result[i].transcript)||'');
+ const kanaOnly=candidates.find(x=>x&&!/[々〇〆ヶ一-龯]/.test(x));
+ let x=cleanSpokenText(kanaOnly||candidates[0]||'');
+ const common={'今日':'きょう','明日':'あした','昨日':'きのう','学校':'がっこう','先生':'せんせい','友達':'ともだち','家族':'かぞく','名前':'なまえ','朝':'あさ','昼':'ひる','夜':'よる','猫':'ねこ','犬':'いぬ','魚':'さかな','鳥':'とり','象':'ぞう','食べ物':'たべもの','果物':'くだもの','林檎':'りんご','苺':'いちご','大好き':'だいすき','有難う':'ありがとう'};
+ Object.keys(common).forEach(k=>{x=x.split(k).join(common[k])});
+ return [...x].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('').slice(0,12);
 }
 function showVoiceInput(){
  stopDemo();game.innerHTML='';
@@ -201,13 +205,13 @@ function showVoiceInput(){
   heard='';result.style.display='none';actions.style.display='none';
   status.textContent='きいているよ…';
   mic.classList.add('listening');mic.innerHTML='<span>🎤</span><b>はなしてね…</b>';
-  rec=new SR();rec.lang='ja-JP';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
+  rec=new SR();rec.lang='ja-JP';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=5;
   rec.onresult=e=>{
-   const raw=e.results?.[0]?.[0]?.transcript||'';
-   heard=cleanSpokenText(raw);
+   const r=e.results&&e.results[0];
+   heard=kanaFromSpeechResult(r||[]);
    if(!heard){
     result.style.display='none';actions.style.display='none';
-    status.textContent=/[々〇〆ヶ一-龯]/.test(raw)?'かんじになったよ。ひらがなで もういちど はなしてみてね':'もういちど はなしてみてね';
+    status.textContent='うまく よみかたに できなかったよ。もういちど はなしてみてね';
     return
    }
    result.textContent=heard;result.style.display='';
