@@ -16,6 +16,7 @@ const words={
  char:['シナモロール','ポムポムプリン']
 };
 const wordLabels={greeting:'あいさつ',animal:'どうぶつ',food:'たべもの',char:'きゃら'};
+const nameWords=[{label:'かこ',hira:'やまだかこ',kanji:'山田栞瑚'},{label:'なぎ',hira:'やまだなぎ',kanji:'山田凪'}];
 const numberPaths={
  '1':['M365 290 L470 205 L470 825'],
  '2':['M300 330 C330 180 650 175 710 315 C770 455 610 560 305 805 L735 805'],
@@ -285,11 +286,28 @@ function showWordResult(){
  const choose=document.createElement('button');choose.className='traceseq wordback';choose.textContent='ほかの ことばを えらぶ';choose.onclick=()=>wordCategory==='voice'?showVoiceInput():showWordList(wordCategory);
  box.append(t,w,row,again,choose);game.appendChild(box);
 }
+function chooseName(){
+ stopDemo();game.innerHTML='';
+ const box=document.createElement('div');box.className='wordchoose';
+ const t=document.createElement('div');t.className='tracepicktitle';t.textContent='だれの なまえを かく？';
+ const grid=document.createElement('div');grid.className='wordcatgrid';
+ nameWords.forEach((p,i)=>{const b=document.createElement('button');b.className='wordcat';b.innerHTML='<span>🌷</span><b>'+p.label+'</b>';b.onclick=()=>chooseNameType(i);grid.appendChild(b)});
+ box.append(t,grid);game.appendChild(box);
+}
+function chooseNameType(i){
+ const p=nameWords[i];game.innerHTML='';
+ const box=document.createElement('div');box.className='tracechoose';
+ const t=document.createElement('div');t.className='tracepicktitle';t.textContent=p.label+'の なまえ';
+ const h=document.createElement('button');h.className='tracechoosebtn';h.innerHTML='ひらがな<br><small>'+p.hira+'</small>';h.onclick=()=>startName(p.hira,'name-hira');
+ const k=document.createElement('button');k.className='tracechoosebtn';k.innerHTML='かんじ<br><small>'+p.kanji+'</small>';k.onclick=()=>startName(p.kanji,'name-kanji');
+ box.append(t,h,k);game.appendChild(box);
+}
+function startName(text,cat){wordCategory=cat;startWord(text)}
 function buildBoard(){
  stopDemo();game.innerHTML='';
  wrap=document.createElement('div');wrap.className='tracebox';
  const tabs=document.createElement('div');tabs.className='tracetabs tracefive';
- tabs.innerHTML='<button class="tracetab" data-mode="number">すうじ</button><button class="tracetab" data-mode="hira">ひらがな</button><button class="tracetab" data-mode="kata">かたかな</button><button class="tracetab" data-mode="word">ことば</button>';
+ tabs.innerHTML='<button class="tracetab" data-mode="number">すうじ</button><button class="tracetab" data-mode="hira">ひらがな</button><button class="tracetab" data-mode="kata">かたかな</button><button class="tracetab" data-mode="word">ことば</button><button class="tracetab" data-mode="name">なまえ</button>';
  tabs.querySelector('[data-mode="'+mode+'"]').classList.add('active');
  label=document.createElement('div');label.className='tracelabel';
  sub=document.createElement('div');sub.className='traceorder';
@@ -304,6 +322,7 @@ function buildBoard(){
  tabs.querySelectorAll('.tracetab').forEach(x=>x.onclick=()=>{
   const m=x.dataset.mode;stopDemo();
   if(m==='word'){mode='word';chooseWordCategory();return}
+  if(m==='name'){mode='word';chooseName();return}
   mode=m;index=0;
   if(mode==='number'){learnMode='sequence';buildBoard()}else chooseKanaMode();
  });
