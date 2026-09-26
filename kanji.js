@@ -81,15 +81,33 @@ async function showStrokeDemo(ch,b){
  const host=game.querySelector('.kanjiguide');
  try{
   const cp=ch.codePointAt(0).toString(16).padStart(5,'0');
-  const res=await fetch('https://cdn.jsdelivr.net/npm/kanjivg@2023.8.2/kanji/'+cp+'.svg');
-  if(!res.ok)throw 0;const txt=await res.text();if(token!==demoToken)return;
-  host.innerHTML=txt;const svg=host.querySelector('svg');if(svg){svg.removeAttribute('width');svg.removeAttribute('height');}
-  const paths=[...host.querySelectorAll('path[id*="kvg:"]')];
-  const usable=paths.filter(p=>{try{return p.getTotalLength()>5}catch(e){return false}});
-  usable.forEach(p=>{const l=p.getTotalLength();p.style.fill='none';p.style.stroke='#cdd7dc';p.style.strokeWidth='5';p.style.strokeLinecap='round';p.style.strokeDasharray=l;p.style.strokeDashoffset=l});
-  host.getBoundingClientRect();
-  for(const p of usable){if(token!==demoToken)break;const l=p.getTotalLength();p.style.stroke='#55bff5';await p.animate([{strokeDashoffset:l},{strokeDashoffset:0}],{duration:650,easing:'linear',fill:'forwards'}).finished.catch(()=>{});await new Promise(r=>setTimeout(r,120))}
- }catch(e){host.innerHTML=guideSvg(ch)}
+  const urls=[
+   'https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/'+cp+'.svg',
+   'https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/'+cp+'.svg'
+  ];
+  let txt='';
+  for(const u of urls){try{const res=await fetch(u,{cache:'force-cache'});if(res.ok){txt=await res.text();break}}catch(e){}}
+  if(!txt)throw new Error('stroke data');
+  if(token!==demoToken)return;
+  host.innerHTML=txt;
+  const svg=host.querySelector('svg');if(!svg)throw new Error('svg');
+  svg.removeAttribute('width');svg.removeAttribute('height');svg.setAttribute('viewBox','0 0 109 109');
+  const paths=[...svg.querySelectorAll('path')].filter(p=>{try{return p.getTotalLength()>5}catch(e){return false}});
+  if(!paths.length)throw new Error('paths');
+  paths.forEach(p=>{const l=p.getTotalLength();p.style.fill='none';p.style.stroke='#d7e0e4';p.style.strokeWidth='4.5';p.style.strokeLinecap='round';p.style.strokeLinejoin='round';p.style.strokeDasharray=String(l);p.style.strokeDashoffset=String(l)});
+  svg.getBoundingClientRect();
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  for(const p of paths){
+   if(token!==demoToken)return;
+   const l=p.getTotalLength();p.style.stroke='#55bff5';
+   const anim=p.animate([{strokeDashoffset:String(l)},{strokeDashoffset:'0'}],{duration:650,easing:'linear',fill:'forwards'});
+   await anim.finished.catch(()=>{p.style.strokeDashoffset='0'});
+   p.style.strokeDashoffset='0';await new Promise(r=>setTimeout(r,100));
+  }
+ }catch(e){
+  host.innerHTML=guideSvg(ch);
+  const note=document.createElement('div');note.className='kanjidemofail';note.textContent='おてほんを よみこめなかったよ';host.appendChild(note);
+ }
  b.disabled=false;b.textContent='おてほん';
 }
 function showDone(){
