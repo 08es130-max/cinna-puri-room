@@ -8,11 +8,14 @@ const kana={
  hira:[...'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'],
  kata:[...'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン']
 };
-const rows={
- hira:[...'あいうえお|かきくけこ|さしすせそ|たちつてと|なにぬねの|はひふへほ|まみむめも|や　ゆ　よ|らりるれろ|わ　　　を|ん'.split('|')],
- kata:[...'アイウエオ|カキクケコ|サシスセソ|タチツテト|ナニヌネノ|ハヒフヘホ|マミムメモ|ヤ　ユ　ヨ|ラリルレロ|ワ　　　ヲ|ン'.split('|')]
-};
 const number=[...'123456789','10'];
+const words={
+ greeting:['おはよう','ありがとう','こんにちは','おやすみ','いただきます','ごちそうさま','いってきます','ただいま','ごめんなさい','だいすき'],
+ animal:['ねこ','いぬ','うさぎ','ぞう','きりん','ぱんだ','さかな','いるか','ライオン','ペンギン','コアラ'],
+ food:['りんご','いちご','すいか','おにぎり','カレー','パン','プリン','ケーキ','アイス','ハンバーグ'],
+ char:['シナモロール','ポムポムプリン']
+};
+const wordLabels={greeting:'あいさつ',animal:'どうぶつ',food:'たべもの',char:'きゃら'};
 const numberPaths={
  '1':['M365 290 L470 205 L470 825'],
  '2':['M300 330 C330 180 650 175 710 315 C770 455 610 560 305 805 L735 805'],
@@ -25,9 +28,12 @@ const numberPaths={
  '9':['M685 505 C600 625 325 610 300 400 C275 190 605 130 710 320 C820 520 690 770 395 860'],
  '10':['M180 290 L270 215 L270 825','M650 205 C475 205 430 355 430 515 C430 680 475 830 650 830 C825 830 870 680 870 515 C870 355 825 205 650 205']
 };
+
 let mode='number',index=0,learnMode='sequence',drawing=false,last=null,demoToken=0,svgHost=null,ink=null,inkCtx=null,label=null,sub=null,controls=null,wrap=null;
+let word='',wordIndex=0,wordDrawings=[],wordCategory='greeting';
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const charType=ch=>/^[ぁ-ゖゝゞ]$/.test(ch)?'hira':(/^[ァ-ヺヽヾ]$/.test(ch)?'kata':'special');
 const sourceUrl=(m,ch)=>'https://raw.githubusercontent.com/zhengkyl/strokesvg/main/dist/'+(m==='hira'?'hiragana':'katakana')+'/'+encodeURIComponent(ch)+'.svg';
 
 async function getKanaSvg(m,ch){
@@ -52,8 +58,15 @@ function prefetchKana(){
 }
 function clearInk(){if(inkCtx)inkCtx.clearRect(0,0,800,800);last=null}
 function stopDemo(){demoToken++}
-function currentChar(){return mode==='number'?number[index]:kana[mode][index]}
-
+function currentChar(){
+ if(mode==='number')return number[index];
+ if(mode==='word')return [...word][wordIndex]||'';
+ return kana[mode][index];
+}
+function specialSvg(ch){
+ if(ch==='ー')return '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M220 515 L805 515" fill="none" stroke="#cfdce2" stroke-width="82" stroke-linecap="round"/><g data-demo-strokes><path d="M220 515 L805 515" fill="none" stroke="#55bff5" stroke-width="74" stroke-linecap="round"/></g></svg>';
+ return '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><text x="512" y="720" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Hiragino Sans,Yu Gothic,sans-serif" font-size="720" font-weight="600" fill="none" stroke="#cfdce2" stroke-width="10">'+ch+'</text></svg>';
+}
 function baseNumberSvg(ch){
  const paths=numberPaths[ch]||[];
  return '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">'+
@@ -68,52 +81,58 @@ function prepareKanaSvg(xml){
   .replace(/style="fill:var\(--shadow,#ccc\)"/,'style="fill:#dbe4e8;opacity:.42"')
   .replace(/style="stroke:var\(--stroke,#000\);fill:none;stroke-width:128;stroke-linecap:round"/,'style="stroke:#9dcfe8;fill:none;stroke-width:64;stroke-linecap:round;opacity:.48"');
 }
+async function getGuideSvg(ch){
+ if(mode==='number')return baseNumberSvg(ch);
+ const t=charType(ch);
+ if(t==='special')return specialSvg(ch);
+ const xml=await getKanaSvg(t,ch);
+ return xml?prepareKanaSvg(xml):specialSvg(ch);
+}
+function wordProgress(){
+ if(mode!=='word')return '';
+ return [...word].map((ch,i)=>i===wordIndex?'【'+ch+'】':ch).join('');
+}
 async function renderCharacter(){
  const token=++demoToken,ch=currentChar();
  clearInk();
  label.textContent=ch+' を なぞってね';
- sub.textContent=mode==='number'?'おてほんを みて かいてみよう':(learnMode==='sequence'?'じゅんばんに れんしゅうしよう':'えらんだ もじを れんしゅうしよう');
- svgHost.innerHTML=mode==='number'?baseNumberSvg(ch):'<div class="traceload">よみこみちゅう…</div>';
- if(mode!=='number'){
-  const xml=await getKanaSvg(mode,ch);if(token!==demoToken)return;
-  svgHost.innerHTML=xml?prepareKanaSvg(xml):'<div class="traceload">おてほんを よみこめなかったよ</div>';
- }
+ if(mode==='word')sub.textContent=wordProgress();
+ else sub.textContent=mode==='number'?'おてほんを みて かいてみよう':(learnMode==='sequence'?'じゅんばんに れんしゅうしよう':'えらんだ もじを れんしゅうしよう');
+ svgHost.innerHTML='<div class="traceload">よみこみちゅう…</div>';
+ const svg=await getGuideSvg(ch);if(token!==demoToken)return;svgHost.innerHTML=svg;
  updateButtons();
 }
 function updateButtons(){
  if(!controls)return;
  const pick=controls.querySelector('.tracepick');
- pick.style.display=mode==='number'||learnMode==='sequence'?'none':'';
+ if(pick)pick.style.display=(mode==='word'||(mode!=='number'&&learnMode==='pick'))?'':'none';
+ const prev=controls.querySelector('.traceprev'),next=controls.querySelector('.tracenext');
+ if(mode==='word'){
+  prev.textContent=wordIndex===0?'ことば':'まえへ';
+  next.textContent=wordIndex===[...word].length-1?'できた':'つぎへ';
+ }else{prev.textContent='まえへ';next.textContent='つぎへ'}
+}
+function prepareAnimatedStrokes(root){
+ const group=root.querySelector('[data-strokesvg="strokes"]');
+ if(group){
+  return [...group.children].map(stroke=>{
+   const ps=stroke.matches('path')?[stroke]:[...stroke.querySelectorAll('path')];
+   return ps.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
+  });
+ }
+ const simple=[...root.querySelectorAll('[data-demo-strokes]>path')];
+ return simple.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='74';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return[{p,len}]});
 }
 async function demo(){
  const token=++demoToken,ch=currentChar(),b=controls.querySelector('.tracedemo');
  b.disabled=true;b.textContent='おてほん さいせいちゅう';
- if(mode==='number'){
-  svgHost.innerHTML=baseNumberSvg(ch);
-  const strokes=[...svgHost.querySelectorAll('[data-demo-strokes]>path')];
-  const info=strokes.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='72';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
-  for(const {p,len} of info){
-   if(token!==demoToken)break;
-   const ms=Math.max(650,Math.min(1500,len*1.45));
-   await p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:ms,easing:'linear',fill:'forwards'}).finished.catch(()=>{});
-   await sleep(180);
-  }
- }else{
-  const xml=await getKanaSvg(mode,ch);if(token!==demoToken){b.disabled=false;b.textContent='おてほん';return}
-  svgHost.innerHTML=prepareKanaSvg(xml);
-  const group=svgHost.querySelector('[data-strokesvg="strokes"]');
-  const strokeGroups=group?[...group.children]:[];
-  const prepared=strokeGroups.map(stroke=>{
-   const ps=stroke.matches('path')?[stroke]:[...stroke.querySelectorAll('path')];
-   const items=ps.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
-   return items;
-  });
-  await new Promise(requestAnimationFrame);
-  for(const items of prepared){
-   if(token!==demoToken)break;
-   const jobs=items.map(({p,len})=>p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:Math.max(600,Math.min(1500,len*1.5)),easing:'linear',fill:'forwards'}).finished.catch(()=>{}));
-   await Promise.all(jobs);await sleep(170);
-  }
+ svgHost.innerHTML=await getGuideSvg(ch);if(token!==demoToken){b.disabled=false;b.textContent='おてほん';return}
+ const prepared=prepareAnimatedStrokes(svgHost);
+ await new Promise(requestAnimationFrame);
+ for(const items of prepared){
+  if(token!==demoToken)break;
+  const jobs=items.map(({p,len})=>p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:Math.max(600,Math.min(1500,len*1.5)),easing:'linear',fill:'forwards'}).finished.catch(()=>{}));
+  await Promise.all(jobs);await sleep(170);
  }
  if(token===demoToken){await sleep(500);await renderCharacter()}
  b.disabled=false;b.textContent='おてほん';
@@ -123,8 +142,7 @@ function showPicker(){
  const box=document.createElement('div');box.className='tracepicker';
  const title=document.createElement('div');title.className='tracepicktitle';title.textContent=(mode==='hira'?'ひらがな':'かたかな')+'を えらんでね';
  const grid=document.createElement('div');grid.className='tracekanagrid';
- const chars=kana[mode];
- chars.forEach(ch=>{const b=document.createElement('button');b.className='tracekanabtn';b.textContent=ch;b.onclick=()=>{index=chars.indexOf(ch);learnMode='pick';buildBoard()} ;grid.appendChild(b)});
+ kana[mode].forEach(ch=>{const b=document.createElement('button');b.className='tracekanabtn';b.textContent=ch;b.onclick=()=>{index=kana[mode].indexOf(ch);learnMode='pick';buildBoard()};grid.appendChild(b)});
  const seq=document.createElement('button');seq.className='traceseq';seq.textContent='あから じゅんばんに やる';seq.onclick=()=>{learnMode='sequence';index=0;buildBoard()};
  box.append(title,grid,seq);game.appendChild(box);
 }
@@ -138,11 +156,52 @@ function chooseKanaMode(){
  pick.onclick=()=>{learnMode='pick';showPicker()};
  box.append(t,seq,pick);game.appendChild(box);
 }
+function chooseWordCategory(){
+ stopDemo();game.innerHTML='';
+ const box=document.createElement('div');box.className='wordchoose';
+ const t=document.createElement('div');t.className='tracepicktitle';t.textContent='どんな ことばを かく？';
+ const grid=document.createElement('div');grid.className='wordcatgrid';
+ [['greeting','👋','あいさつ'],['animal','🐶','どうぶつ'],['food','🍎','たべもの'],['char','⭐','きゃら']].forEach(([k,ic,tx])=>{
+  const b=document.createElement('button');b.className='wordcat';b.innerHTML='<span>'+ic+'</span><b>'+tx+'</b>';b.onclick=()=>showWordList(k);grid.appendChild(b);
+ });
+ box.append(t,grid);game.appendChild(box);
+}
+function showWordList(cat){
+ stopDemo();wordCategory=cat;game.innerHTML='';
+ const box=document.createElement('div');box.className='wordlistbox';
+ const t=document.createElement('div');t.className='tracepicktitle';t.textContent=wordLabels[cat]+'から えらんでね';
+ const grid=document.createElement('div');grid.className='wordlist';
+ words[cat].forEach(w=>{const b=document.createElement('button');b.className='wordbtn';b.textContent=w;b.onclick=()=>startWord(w);grid.appendChild(b)});
+ const back=document.createElement('button');back.className='traceseq';back.textContent='もどる';back.onclick=chooseWordCategory;
+ box.append(t,grid,back);game.appendChild(box);
+}
+function startWord(w){
+ word=w;wordIndex=0;wordDrawings=Array([...word].length).fill(null);buildBoard();
+}
+function saveWordDrawing(){
+ if(mode!=='word'||!ink)return;
+ wordDrawings[wordIndex]=ink.toDataURL('image/png');
+}
+function showWordResult(){
+ stopDemo();saveWordDrawing();game.innerHTML='';
+ const box=document.createElement('div');box.className='wordresult';
+ const t=document.createElement('div');t.className='wordresulttitle';t.textContent='かけたよ！';
+ const w=document.createElement('div');w.className='wordresultword';w.textContent=word;
+ const row=document.createElement('div');row.className='wordresultrow';
+ [...word].forEach((ch,i)=>{
+  const c=document.createElement('div');c.className='wordresultchar';
+  const img=document.createElement('img');if(wordDrawings[i])img.src=wordDrawings[i];img.alt=ch;
+  const cap=document.createElement('span');cap.textContent=ch;c.append(img,cap);row.appendChild(c);
+ });
+ const again=document.createElement('button');again.className='traceseq';again.textContent='もういちど かく';again.onclick=()=>startWord(word);
+ const choose=document.createElement('button');choose.className='traceseq wordback';choose.textContent='ほかの ことばを えらぶ';choose.onclick=()=>showWordList(wordCategory);
+ box.append(t,w,row,again,choose);game.appendChild(box);
+}
 function buildBoard(){
  stopDemo();game.innerHTML='';
  wrap=document.createElement('div');wrap.className='tracebox';
- const tabs=document.createElement('div');tabs.className='tracetabs';
- tabs.innerHTML='<button class="tracetab" data-mode="number">すうじ</button><button class="tracetab" data-mode="hira">ひらがな</button><button class="tracetab" data-mode="kata">かたかな</button>';
+ const tabs=document.createElement('div');tabs.className='tracetabs tracefive';
+ tabs.innerHTML='<button class="tracetab" data-mode="number">すうじ</button><button class="tracetab" data-mode="hira">ひらがな</button><button class="tracetab" data-mode="kata">かたかな</button><button class="tracetab" data-mode="word">ことば</button>';
  tabs.querySelector('[data-mode="'+mode+'"]').classList.add('active');
  label=document.createElement('div');label.className='tracelabel';
  sub=document.createElement('div');sub.className='traceorder';
@@ -154,18 +213,32 @@ function buildBoard(){
  controls.innerHTML='<button class="tracedemo">おてほん</button><button class="traceclear">けす</button><button class="traceprev">まえへ</button><button class="tracenext">つぎへ</button><button class="tracepick">もじを えらぶ</button>';
  wrap.append(tabs,label,sub,board,controls);game.appendChild(wrap);
 
- tabs.querySelectorAll('.tracetab').forEach(x=>x.onclick=()=>{mode=x.dataset.mode;index=0;stopDemo();if(mode==='number'){learnMode='sequence';buildBoard()}else chooseKanaMode()});
+ tabs.querySelectorAll('.tracetab').forEach(x=>x.onclick=()=>{
+  const m=x.dataset.mode;stopDemo();
+  if(m==='word'){mode='word';chooseWordCategory();return}
+  mode=m;index=0;
+  if(mode==='number'){learnMode='sequence';buildBoard()}else chooseKanaMode();
+ });
  controls.querySelector('.tracedemo').onclick=demo;
  controls.querySelector('.traceclear').onclick=clearInk;
- controls.querySelector('.tracepick').onclick=showPicker;
+ controls.querySelector('.tracepick').onclick=()=>mode==='word'?showWordList(wordCategory):showPicker();
  controls.querySelector('.traceprev').onclick=()=>{
   stopDemo();
+  if(mode==='word'){
+   if(wordIndex===0){showWordList(wordCategory);return}
+   saveWordDrawing();wordIndex--;renderCharacter();return;
+  }
   if(mode==='number'){index=(index-1+number.length)%number.length;renderCharacter()}
   else if(learnMode==='sequence'){index=(index-1+kana[mode].length)%kana[mode].length;renderCharacter()}
   else showPicker();
  };
  controls.querySelector('.tracenext').onclick=()=>{
   stopDemo();
+  if(mode==='word'){
+   saveWordDrawing();
+   if(wordIndex>=[...word].length-1){showWordResult();return}
+   wordIndex++;renderCharacter();return;
+  }
   if(mode==='number'){index=(index+1)%number.length;renderCharacter()}
   else if(learnMode==='sequence'){index=(index+1)%kana[mode].length;renderCharacter()}
   else showPicker();
