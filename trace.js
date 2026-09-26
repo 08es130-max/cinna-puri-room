@@ -168,7 +168,12 @@ function chooseWordCategory(){
  box.append(t,grid,voice);game.appendChild(box);
 }
 function cleanSpokenText(t){
- return (t||'').trim().replace(/[\s　、。,.!?！？「」『』（）()]/g,'').slice(0,12);
+ /* おんせいで漢字に変換されても、書く画面には漢字を出さない */
+ let x=(t||'').trim().replace(/[\s　、。,.!?！？「」『』（）()]/g,'');
+ const kanji=/[々〇〆ヶ一-龯]/;
+ if(kanji.test(x))return '';
+ x=[...x].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('');
+ return x.slice(0,12);
 }
 function showVoiceInput(){
  stopDemo();game.innerHTML='';
@@ -198,8 +203,13 @@ function showVoiceInput(){
   mic.classList.add('listening');mic.innerHTML='<span>🎤</span><b>はなしてね…</b>';
   rec=new SR();rec.lang='ja-JP';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
   rec.onresult=e=>{
-   heard=cleanSpokenText(e.results?.[0]?.[0]?.transcript||'');
-   if(!heard){status.textContent='もういちど はなしてみてね';return}
+   const raw=e.results?.[0]?.[0]?.transcript||'';
+   heard=cleanSpokenText(raw);
+   if(!heard){
+    result.style.display='none';actions.style.display='none';
+    status.textContent=/[々〇〆ヶ一-龯]/.test(raw)?'かんじになったよ。ひらがなで もういちど はなしてみてね':'もういちど はなしてみてね';
+    return
+   }
    result.textContent=heard;result.style.display='';
    actions.style.display='grid';status.textContent='この ことばで いい？';
   };
