@@ -168,16 +168,42 @@ function chooseWordCategory(){
  box.append(t,grid,voice);game.appendChild(box);
 }
 function cleanSpokenText(t){
- return (t||'').trim().replace(/[\\s　、。,.!?！？「」『』（）()]/g,'').slice(0,12);
+ return (t||'').trim().replace(/[\\s　、。,.!?！？「」『』（）()]/g,'');
 }
-function kanaFromSpeechResult(result){
+let readingEnginePromise=null;
+function loadScriptOnce(src,test){
+ if(test())return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const old=[...document.scripts].find(x=>x.src===src);
+  if(old){old.addEventListener('load',resolve,{once:true});old.addEventListener('error',reject,{once:true});return}
+  const sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc);
+ });
+}
+async function getReadingEngine(){
+ if(readingEnginePromise)return readingEnginePromise;
+ readingEnginePromise=(async()=>{
+  await loadScriptOnce('https://cdn.jsdelivr.net/npm/kuroshiro@1.2.0/dist/kuroshiro.min.js',()=>!!window.Kuroshiro);
+  await loadScriptOnce('https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js',()=>!!window.KuromojiAnalyzer);
+  const k=new window.Kuroshiro();
+  await k.init(new window.KuromojiAnalyzer({dictPath:'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict'}));
+  return k;
+ })().catch(e=>{readingEnginePromise=null;throw e});
+ return readingEnginePromise;
+}
+async function speechToKana(result){
  const candidates=[];
  for(let i=0;i<result.length;i++)candidates.push((result[i]&&result[i].transcript)||'');
- const kanaOnly=candidates.find(x=>x&&!/[々〇〆ヶ一-龯]/.test(x));
- let x=cleanSpokenText(kanaOnly||candidates[0]||'');
- const common={'今日':'きょう','明日':'あした','昨日':'きのう','学校':'がっこう','先生':'せんせい','友達':'ともだち','家族':'かぞく','名前':'なまえ','朝':'あさ','昼':'ひる','夜':'よる','猫':'ねこ','犬':'いぬ','魚':'さかな','鳥':'とり','象':'ぞう','食べ物':'たべもの','果物':'くだもの','林檎':'りんご','苺':'いちご','大好き':'だいすき','有難う':'ありがとう'};
- Object.keys(common).forEach(k=>{x=x.split(k).join(common[k])});
- return [...x].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('').slice(0,12);
+ const raw=cleanSpokenText(candidates[0]||'');
+ if(!raw)return '';
+ const kanaCandidate=candidates.find(x=>x&&!/[々〇〆ヶ一-龯]/.test(x));
+ if(kanaCandidate)return [...cleanSpokenText(kanaCandidate)].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('').slice(0,24);
+ try{
+  const k=await getReadingEngine();
+  const yomi=await k.convert(raw,{to:'hiragana',mode:'normal'});
+  return [...cleanSpokenText(yomi)].filter(ch=>/[ぁ-ゖゝゞァ-ヺヽヾー]/.test(ch)).join('').slice(0,24);
+ }catch(e){
+  return '';
+ }
 }
 function showVoiceInput(){
  stopDemo();game.innerHTML='';
@@ -206,12 +232,14 @@ function showVoiceInput(){
   status.textContent='きいているよ…';
   mic.classList.add('listening');mic.innerHTML='<span>🎤</span><b>はなしてね…</b>';
   rec=new SR();rec.lang='ja-JP';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=5;
-  rec.onresult=e=>{
+  rec.onresult=async e=>{
    const r=e.results&&e.results[0];
-   heard=kanaFromSpeechResult(r||[]);
+   const raw=(r&&r[0]&&r[0].transcript)||'';
+   status.textContent=/[々〇〆ヶ一-龯]/.test(raw)?'ひらがなに しているよ…':'ことばを かくにんしているよ…';
+   heard=await speechToKana(r||[]);
    if(!heard){
     result.style.display='none';actions.style.display='none';
-    status.textContent='うまく よみかたに できなかったよ。もういちど はなしてみてね';
+    status.textContent='うまく よみかたに できなかったよ。もういちど おしてみてね';
     return
    }
    result.textContent=heard;result.style.display='';
