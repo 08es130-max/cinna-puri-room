@@ -164,7 +164,53 @@ function chooseWordCategory(){
  [['greeting','👋','あいさつ'],['animal','🐶','どうぶつ'],['food','🍎','たべもの'],['char','⭐','きゃら']].forEach(([k,ic,tx])=>{
   const b=document.createElement('button');b.className='wordcat';b.innerHTML='<span>'+ic+'</span><b>'+tx+'</b>';b.onclick=()=>showWordList(k);grid.appendChild(b);
  });
- box.append(t,grid);game.appendChild(box);
+ const voice=document.createElement('button');voice.className='wordvoice';voice.innerHTML='<span>🎤</span><b>はなして かこう</b><small>ことばを いってみよう</small>';voice.onclick=showVoiceInput;
+ box.append(t,grid,voice);game.appendChild(box);
+}
+function cleanSpokenText(t){
+ return (t||'').trim().replace(/[\s　、。,.!?！？「」『』（）()]/g,'').slice(0,12);
+}
+function showVoiceInput(){
+ stopDemo();game.innerHTML='';
+ const box=document.createElement('div');box.className='voicebox';
+ const title=document.createElement('div');title.className='tracepicktitle';title.textContent='はなして かこう';
+ const mic=document.createElement('button');mic.className='voicemic';mic.innerHTML='<span>🎤</span><b>ここを おして はなしてね</b>';
+ const status=document.createElement('div');status.className='voicestatus';status.textContent='たとえば「おはよう」って いってみよう';
+ const result=document.createElement('div');result.className='voiceresult';result.style.display='none';
+ const actions=document.createElement('div');actions.className='voiceactions';actions.style.display='none';
+ const use=document.createElement('button');use.textContent='これを かく';
+ const retry=document.createElement('button');retry.textContent='もういちど';
+ actions.append(use,retry);
+ const note=document.createElement('div');note.className='voicenote';note.textContent='ひらがな・かたかなは かきじゅんの おてほんも みられるよ';
+ const back=document.createElement('button');back.className='traceseq';back.textContent='もどる';back.onclick=chooseWordCategory;
+ box.append(title,mic,status,result,actions,note,back);game.appendChild(box);
+
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){
+  mic.disabled=true;status.textContent='この たんまつでは おんせいにゅうりょくが つかえないよ';
+  return;
+ }
+ let rec=null,heard='';
+ const listen=()=>{
+  if(rec)try{rec.abort()}catch(e){}
+  heard='';result.style.display='none';actions.style.display='none';
+  status.textContent='きいているよ…';
+  mic.classList.add('listening');mic.innerHTML='<span>🎤</span><b>はなしてね…</b>';
+  rec=new SR();rec.lang='ja-JP';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
+  rec.onresult=e=>{
+   heard=cleanSpokenText(e.results?.[0]?.[0]?.transcript||'');
+   if(!heard){status.textContent='もういちど はなしてみてね';return}
+   result.textContent=heard;result.style.display='';
+   actions.style.display='grid';status.textContent='この ことばで いい？';
+  };
+  rec.onerror=e=>{
+   status.textContent=e.error==='not-allowed'?'まいくを つかえるように してね':'うまく ききとれなかったよ';
+  };
+  rec.onend=()=>{mic.classList.remove('listening');mic.innerHTML='<span>🎤</span><b>ここを おして はなしてね</b>'};
+  try{rec.start()}catch(e){status.textContent='もういちど おしてみてね'}
+ };
+ mic.onclick=listen;retry.onclick=listen;
+ use.onclick=()=>{if(heard){wordCategory='voice';startWord(heard)}};
 }
 function showWordList(cat){
  stopDemo();wordCategory=cat;game.innerHTML='';
@@ -194,7 +240,7 @@ function showWordResult(){
   const cap=document.createElement('span');cap.textContent=ch;c.append(img,cap);row.appendChild(c);
  });
  const again=document.createElement('button');again.className='traceseq';again.textContent='もういちど かく';again.onclick=()=>startWord(word);
- const choose=document.createElement('button');choose.className='traceseq wordback';choose.textContent='ほかの ことばを えらぶ';choose.onclick=()=>showWordList(wordCategory);
+ const choose=document.createElement('button');choose.className='traceseq wordback';choose.textContent='ほかの ことばを えらぶ';choose.onclick=()=>wordCategory==='voice'?showVoiceInput():showWordList(wordCategory);
  box.append(t,w,row,again,choose);game.appendChild(box);
 }
 function buildBoard(){
@@ -221,11 +267,11 @@ function buildBoard(){
  });
  controls.querySelector('.tracedemo').onclick=demo;
  controls.querySelector('.traceclear').onclick=clearInk;
- controls.querySelector('.tracepick').onclick=()=>mode==='word'?showWordList(wordCategory):showPicker();
+ controls.querySelector('.tracepick').onclick=()=>mode==='word'?(wordCategory==='voice'?showVoiceInput():showWordList(wordCategory)):showPicker();
  controls.querySelector('.traceprev').onclick=()=>{
   stopDemo();
   if(mode==='word'){
-   if(wordIndex===0){showWordList(wordCategory);return}
+   if(wordIndex===0){wordCategory==='voice'?showVoiceInput():showWordList(wordCategory);return}
    saveWordDrawing();wordIndex--;renderCharacter();return;
   }
   if(mode==='number'){index=(index-1+number.length)%number.length;renderCharacter()}
