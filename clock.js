@@ -5,7 +5,7 @@ if(!btn||!game)return;
 let level='hour',q=null,answered=false;
 const rnd=n=>Math.floor(Math.random()*n);
 function choose(){
- game.innerHTML='<div class="clockchoose"><div class="clockhead">どこまで やってみる？</div><button data-l="hour">🕐<b>なんじ？</b><small>ちょうどの じかん</small></button><button data-l="half">🕧<b>なんじ はん？</b><small>30ぷんも でるよ</small></button><button data-l="five">🕒<b>なんじ なんぷん？</b><small>5ぷんごとに よもう</small></button></div>';
+ game.innerHTML='<div class="clockchoose"><div class="clockhead">どこまで やってみる？</div><button data-l="hour">🕐<b>なんじ？</b><small>ちょうどの じかん</small></button><button data-l="half">🕧<b>なんじ 30ぷん？</b><small>30ぷんも でるよ</small></button><button data-l="five">🕒<b>なんじ なんぷん？</b><small>5ぷんごとに よもう</small></button></div>';
  game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;next()});
 }
 function makeQ(){
@@ -14,7 +14,7 @@ function makeQ(){
  if(level==='five')m=rnd(12)*5;
  return {h,m};
 }
-function label(h,m){return m===0?h+'じ':m===30&&level==='half'?h+'じ はん':h+'じ '+m+'ぷん'}
+function label(h,m){return m===0?h+'じ':h+'じ '+m+'ぷん'}
 function choicesFor(x){
  const vals=[label(x.h,x.m)],seen=new Set(vals);
  while(vals.length<4){
