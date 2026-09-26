@@ -82,8 +82,22 @@ function prepareKanaSvg(xml){
   .replace(/style="fill:var\(--shadow,#ccc\)"/,'style="fill:#dbe4e8;opacity:.42"')
   .replace(/style="stroke:var\(--stroke,#000\);fill:none;stroke-width:128;stroke-linecap:round"/,'style="stroke:#9dcfe8;fill:none;stroke-width:64;stroke-linecap:round;opacity:.48"');
 }
+async function getKanjiSvg(ch){
+ const cp=ch.codePointAt(0).toString(16).padStart(5,'0');
+ const urls=['https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/'+cp+'.svg','https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/'+cp+'.svg'];
+ for(const url of urls){try{const r=await fetch(url,{cache:'force-cache'});if(r.ok)return await r.text()}catch(e){}}
+ return '';
+}
+function prepareKanjiSvg(xml){
+ const box=document.createElement('div');box.innerHTML=xml;const svg=box.querySelector('svg');if(!svg)return '';
+ svg.removeAttribute('width');svg.removeAttribute('height');svg.setAttribute('class','tracesvg kanjitracesvg');svg.setAttribute('viewBox','0 0 109 109');
+ svg.querySelectorAll('text').forEach(x=>x.remove());
+ [...svg.querySelectorAll('path')].forEach(p=>{p.setAttribute('fill','none');p.setAttribute('stroke','#dbe4e8');p.setAttribute('stroke-width','4.5');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.style.opacity='.55'});
+ return svg.outerHTML;
+}
 async function getGuideSvg(ch){
  if(mode==='number')return baseNumberSvg(ch);
+ if(wordCategory==='name-kanji'&&/[一-龯々]/.test(ch)){const x=await getKanjiSvg(ch);return x?prepareKanjiSvg(x):specialSvg(ch)}
  const t=charType(ch);
  if(t==='special')return specialSvg(ch);
  const xml=await getKanaSvg(t,ch);
@@ -118,18 +132,22 @@ function prepareAnimatedStrokes(root){
  if(group){
   return [...group.children].map(stroke=>{
    const ps=stroke.matches('path')?[stroke]:[...stroke.querySelectorAll('path')];
-   return ps.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return{p,len}});
+   return ps.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='82';p.style.strokeLinecap='butt';p.style.strokeDasharray=String(len)+' '+String(len+1000);p.style.strokeDashoffset=String(len);return{p,len}});
   });
  }
  const simple=[...root.querySelectorAll('[data-demo-strokes]>path')];
- return simple.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='74';p.style.strokeDasharray=len;p.style.strokeDashoffset=len;return[{p,len}]});
+ return simple.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='74';p.style.strokeLinecap='butt';p.style.strokeDasharray=String(len)+' '+String(len+1000);p.style.strokeDashoffset=String(len);return[{p,len}]});
 }
 async function demo(){
  const token=++demoToken,ch=currentChar(),b=controls.querySelector('.tracedemo');
  b.disabled=true;b.textContent='おてほん さいせいちゅう';
  svgHost.innerHTML=await getGuideSvg(ch);if(token!==demoToken){b.disabled=false;b.textContent='おてほん';return}
- const prepared=prepareAnimatedStrokes(svgHost);
- await new Promise(requestAnimationFrame);
+ let prepared;
+ if(wordCategory==='name-kanji'&&/[一-龯々]/.test(ch)){
+  const paths=[...svgHost.querySelectorAll('path')].filter(p=>{try{return p.getTotalLength()>2}catch(e){return false}});
+  prepared=paths.map(p=>{const len=p.getTotalLength();p.style.opacity='1';p.style.stroke='#55bff5';p.style.strokeWidth='4.5';p.style.strokeDasharray=String(len)+' '+String(len+1000);p.style.strokeDashoffset=String(len);p.style.strokeLinecap='butt';return[{p,len}]});
+ }else prepared=prepareAnimatedStrokes(svgHost);
+ await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
  for(const items of prepared){
   if(token!==demoToken)break;
   const jobs=items.map(({p,len})=>p.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:Math.max(600,Math.min(1500,len*1.5)),easing:'linear',fill:'forwards'}).finished.catch(()=>{}));
