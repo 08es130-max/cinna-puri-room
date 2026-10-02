@@ -73,12 +73,17 @@ function showStage(){
  cancelAnimationFrame(raf);running=false;choice=-1;const s=stages[level][stage];game.innerHTML='';
  const box=document.createElement('div');box.className='racebox';box.innerHTML='<div class="racehead">'+labels[level]+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが いちばん はやいかな？</div>';
  const svg=svgEl('svg',{class:'raceworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
+ const floor=svgEl('g',{class:'racefloor'});
+ floor.append(svgEl('ellipse',{cx:52,cy:94,rx:42,ry:3.2,class:'floorShadow'}));
+ svg.append(floor);
  const defs=svgEl('defs');const pat=svgEl('pattern',{id:'finishCheck',width:4,height:4,patternUnits:'userSpaceOnUse'});pat.append(svgEl('rect',{width:2,height:2,fill:'#333'}),svgEl('rect',{x:2,y:2,width:2,height:2,fill:'#333'}));defs.append(pat);svg.append(defs);
  if(s.kind==='shared'){svg.append(svgEl('rect',{x:92,y:43,width:5,height:14,fill:'url(#finishCheck)',class:'sharedfinish'}))}
  const mets=s.paths.map((p,j)=>{
   const shadow=svgEl('path',{d:pathD(p),class:'trackshadow'});svg.append(shadow);
+  const side=svgEl('path',{d:pathD(p),class:'trackside'});svg.append(side);
   const rail=svgEl('path',{d:pathD(p),class:'trackrail'});svg.append(rail);
   const path=svgEl('path',{d:pathD(p),class:'realtrack','data-i':j});svg.append(path);
+  const shine=svgEl('path',{d:pathD(p),class:'trackshine'});svg.append(shine);
   if(s.kind==='easy'){const z=p[p.length-1];svg.append(svgEl('rect',{x:z[0]-1,y:z[1]-5,width:4,height:10,fill:'url(#finishCheck)'}))}
   s.obs[j].forEach(o=>{const q=obstaclePoint(p,o);svg.append(obstacleGroup(o.type,q.x,q.y))});
   const st=p[0];const ball=svgEl('circle',{cx:st[0],cy:st[1],r:2.8,fill:B[j][0],class:'physicsball','data-i':j});svg.append(ball);
@@ -100,7 +105,13 @@ function runRace(s,mets,box,svg){
    const gravity=Math.sin(rad)*0.000018;st.v=Math.max(.012,Math.min(.052,st.v+gravity*dt));st.v*=Math.pow(.9996,dt);st.d+=st.v*dt;
    s.obs[j].forEach((o,k)=>{const key=j+'-'+k;if(st.hit.has(key))return;const op=obstaclePoint(s.paths[j],o),oq=pointOn(s.paths[j],mets[j],st.d);if(Math.hypot(op.x-oq.x,op.y-oq.y)<4){st.hit.add(key);st.wait=o.delay*22;if(o.type==='hill')st.v*=.55;if(o.type==='bridge')st.v*=.72;if(o.type==='gate')st.v*=.35;if(o.type==='spinner')st.v*=.3}});
    if(st.d>=mets[j].total){st.d=mets[j].total;st.done=true;st.time=elapsed;finish.push(j)}
-   const pos=pointOn(s.paths[j],mets[j],st.d);balls[j].setAttribute('cx',Math.max(3,Math.min(97,pos.x)));balls[j].setAttribute('cy',Math.max(3,Math.min(97,pos.y)));
+   const pos=pointOn(s.paths[j],mets[j],st.d);
+   let px=pos.x,py=pos.y;
+   if(s.kind==='shared'&&pos.seg>=s.paths[j].length-4){
+    const lane=(j-1.5)*1.55,ang=pos.angle*Math.PI/180;
+    px+=-Math.sin(ang)*lane;py+=Math.cos(ang)*lane;
+   }
+   balls[j].setAttribute('cx',Math.max(3,Math.min(97,px)));balls[j].setAttribute('cy',Math.max(3,Math.min(97,py)));
   });
   if(states.every(x=>x.done)){running=false;finishRace(finish[0],box);return}raf=requestAnimationFrame(tick);
  }
