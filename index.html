@@ -393,14 +393,14 @@ nav button{min-height:64px}
 .combo{position:relative!important;display:inline-grid!important;place-items:center!important;width:42px!important;height:42px!important;background:transparent!important;border:0!important}.combo i{font-style:normal;font-size:34px;line-height:1}.combo b{position:absolute;font-size:20px;color:#fff;text-shadow:0 1px 2px #333;line-height:1}.brainchoices .combo{margin:auto}
 .block3d{perspective:500px;overflow:hidden;position:relative}.cubeplane{position:relative;width:180px;height:110px;margin:25px auto 0;transform:rotateX(55deg) rotateZ(-45deg);transform-style:preserve-3d}.cube3d{position:absolute;width:34px;height:34px;left:calc(55px + var(--x)*38px + var(--y)*38px);top:calc(55px + var(--y)*38px - var(--x)*38px);transform:translateZ(calc(var(--z)*35px));background:#8fd3ff;border:2px solid #4b9ac9;box-shadow:inset -7px -7px 0 #67b5e5}.cube3d:before,.cube3d:after{content:"";position:absolute;background:#bce8ff;border:2px solid #4b9ac9}.cube3d:before{width:34px;height:10px;left:-2px;top:-10px;transform-origin:bottom;transform:skewX(-45deg)}.cube3d:after{width:10px;height:34px;right:-10px;top:-2px;transform-origin:left;transform:skewY(-45deg);background:#6fbbe8}
 
-/* 0.9.08 ほんとうの りったいひょうじ */
+/* 0.9.09 ほんとうの りったいひょうじ */
 .block3d{height:190px!important;min-height:190px!important;padding:0!important;display:grid;place-items:center;overflow:hidden}
 .isoBlocks{width:100%;height:100%;max-width:360px;overflow:visible}
 .isoCube polygon{stroke:#438fb9;stroke-width:2.2;stroke-linejoin:round}
 .isoCube .ctop{fill:#bcecff}.isoCube .cleft{fill:#79c5eb}.isoCube .cright{fill:#55addb}
 .brainchoices .combo{width:48px!important;height:48px!important}
 
-/* 0.9.08 rule tokens + rotatable blocks */
+/* 0.9.09 rule tokens + rotatable blocks */
 .ruleToken{display:inline-block;width:34px;height:34px;background:var(--rc);vertical-align:middle}
 .ruleToken.circle{border-radius:50%}.ruleToken.square{border-radius:5px}.ruleToken.diamond{transform:rotate(45deg) scale(.78)}
 .ruleToken.triangle{width:0;height:0;background:none;border-left:18px solid transparent;border-right:18px solid transparent;border-bottom:32px solid var(--rc)}
@@ -410,7 +410,7 @@ nav button{min-height:64px}
 .block3d{height:180px!important;min-height:180px!important}
 .isoBlocks{width:96%;height:96%;max-width:390px}
 
-/* 0.9.08 pattern visibility + 3D fit */
+/* 0.9.09 pattern visibility + 3D fit */
 .patternrow .patterncell{display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important}
 .patternrow .ruleToken{flex:0 0 auto}
 .patternrow .ruleToken.triangle{width:0!important;height:0!important}
@@ -419,7 +419,7 @@ nav button{min-height:64px}
 .block3d .isoBlocks{display:block;width:100%!important;height:100%!important;max-width:none!important;overflow:visible}
 .rotateHelp{margin:2px 0 4px}
 
-/* 0.9.08: nested rule tokens must not inherit the white sequence-card style */
+/* 0.9.09: nested rule tokens must not inherit the white sequence-card style */
 .brain-mode .patternrow .patterncell>.ruleToken{
  width:34px!important;min-width:34px!important;height:34px!important;
  background:var(--rc)!important;border:0!important;border-radius:5px!important;
@@ -435,7 +435,7 @@ nav button{min-height:64px}
 .block3d{height:245px!important;min-height:245px!important;align-items:center!important;padding:18px 24px!important}
 .block3d>.isoBlocks{width:88%!important;height:88%!important;max-width:330px!important;max-height:205px!important;overflow:visible!important}
 
-/* 0.9.08: larger 3D viewing window + swipe rotation */
+/* 0.9.09: larger 3D viewing window + swipe rotation */
 .brain-mode.brain-blocks .brainbox{padding-bottom:2px!important}
 .brain-mode.brain-blocks .block3d{
  height:300px!important;min-height:300px!important;
@@ -448,7 +448,7 @@ nav button{min-height:64px}
 .brain-mode.brain-blocks .rotateHelp{margin:5px 0 4px!important}
 .brain-mode.brain-blocks .rotateBtns{margin:3px 0 5px!important}
 
-/* 0.9.08: blocks gets its own tall layout; override generic brain sizing */
+/* 0.9.09: blocks gets its own tall layout; override generic brain sizing */
 #miniArea.brain-mode.brain-blocks #game{overflow:visible!important}
 #miniArea.brain-mode.brain-blocks .brainbox{padding:2px 0 4px!important}
 #miniArea.brain-mode.brain-blocks .block3d{
@@ -466,7 +466,7 @@ nav button{min-height:64px}
 #miniArea.brain-mode.brain-blocks .brainchoices{margin-top:4px!important}
 #miniArea.brain-mode.brain-blocks .brainchoices button{min-height:48px!important}
 
-/* 0.9.08: correct target — brain-blocks is on #game and #miniArea */
+/* 0.9.09: correct target — brain-blocks is on #game and #miniArea */
 #miniArea.brain-blocks #game.brain-blocks .block3d,
 #game.brain-blocks .block3d{
  height:360px!important;min-height:360px!important;
@@ -477,8 +477,18 @@ nav button{min-height:64px}
 #game.brain-blocks .block3d>.isoBlocks{
  width:78%!important;height:78%!important;max-width:310px!important;max-height:275px!important;margin:auto!important;
 }
-</style><meta name="deploy-revision" content="0908-fix-hard-pattern-iso-blocks"></head><body><div class="app">
-<header><div class="row"><b>なかよしるーむ</b><span class="headver">ばーじょん 0.9.08</span></div></header>
+
+/* 0.9.09: balanced 3D area so all four answers remain visible */
+#miniArea.brain-blocks #game.brain-blocks .block3d,
+#game.brain-blocks .block3d{
+ height:285px!important;min-height:285px!important;padding:8px 14px!important;
+}
+#miniArea.brain-blocks #game.brain-blocks .block3d>.isoBlocks,
+#game.brain-blocks .block3d>.isoBlocks{
+ width:80%!important;height:80%!important;max-height:225px!important;
+}
+</style><meta name="deploy-revision" content="0909-fix-hard-pattern-iso-blocks"></head><body><div class="app">
+<header><div class="row"><b>なかよしるーむ</b><span class="headver">ばーじょん 0.9.09</span></div></header>
 <main>
 <section id="home" class="screen active"><div class="room"><div class="rug"></div><div id="bubble" class="bubble"></div><div id="giftstage" class="giftstage"><div id="biggift" class="biggift">🎁</div><div id="giftitem" class="giftitem"></div></div><div id="petmode" class="petmode" hidden>なでなで してね♪</div><div id="mealpick" class="mealpick"><div style="font-weight:700;margin-bottom:7px">なにを たべる？</div><div class="mealfoods"><button class="mealfood" data-food="🍙" data-name="おにぎり"><span>🍙</span>おにぎり</button><button class="mealfood" data-food="🍞" data-name="ぱん"><span>🍞</span>ぱん</button><button class="mealfood" data-food="🥕" data-name="にんじん"><span>🥕</span>にんじん</button><button class="mealfood" data-food="🍎" data-name="りんご"><span>🍎</span>りんご</button></div></div><div id="snackpick" class="mealpick"><div style="font-weight:700;margin-bottom:7px">どのおやつにする？</div><div class="mealfoods"><button class="snackfood" data-food="🍪" data-name="くっきー"><span>🍪</span>くっきー</button><button class="snackfood" data-food="🍬" data-name="きゃんでぃ"><span>🍬</span>きゃんでぃ</button><button class="snackfood" data-food="🍩" data-name="どーなつ"><span>🍩</span>どーなつ</button><button class="snackfood" data-food="🍰" data-name="けーき"><span>🍰</span>けーき</button><button class="snackfood" data-food="🍮" data-name="ぷりん"><span>🍮</span>ぷりん</button></div></div><button class="char c1" data-char="cinna"><img class="character-img" id="cinnaImg" src="./assets/cinnamoroll.webp" alt="しなもろーる"><div class="name">しなもろーる</div></button><button class="char c2" data-char="puri"><img class="character-img" id="puriImg" src="./assets/pompompurin.webp" alt="ぽむぽむぷりん"><div class="name">ぽむぽむぷりん</div></button></div><div class="card"><b>きょうのふたり</b><p class="small" id="timeMsg"></p><div class="grid2"><button class="btn" id="food">🍚<br>ごはん</button><button class="btn" id="snack">🍪<br>おやつ</button><button class="btn" id="pet">🫳<br>なでる</button><button class="btn" id="present">🎁<br>ぷれぜんと</button></div></div></section>
 <section id="talk" class="screen"><div class="card"><b>だれと おはなしする？</b><div class="grid2" style="margin-top:10px"><button class="btn talkwho selected" data-who="cinna">☁️<br>しなもろーる</button><button class="btn talkwho" data-who="puri">🍮<br>ぽむぽむぷりん</button></div><div class="talkstage"><img id="talkSprite" src="./assets/cinnamoroll.webp" alt="しなもろーる"></div><div class="talkbubble"><b id="talkName">しなもろーる</b><span id="talkText">なにを おはなししようか？</span></div><div id="talkChoices" class="talkchoices"></div><button id="talkBack" class="talkback" style="display:none">← ほかの おはなし</button></div></section>
@@ -691,11 +701,11 @@ $$('.outing').forEach(b=>b.onclick=()=>openOuting(b.dataset.place));outingHome.o
   }
  };
 }
-function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.08',APP_CACHE='0908';let appReloading=false;
+function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.09',APP_CACHE='0909';let appReloading=false;
 function showUpdating(){let x=document.getElementById('appUpdating');if(!x){x=document.createElement('div');x.id='appUpdating';x.style.cssText='position:fixed;inset:0;z-index:99999;background:#fffaf4;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:22px;font-weight:900;color:#514b47';x.textContent='こうしんしているよ…';document.body.appendChild(x)}}
 async function checkAppVersion(reg){try{const res=await fetch('./version.json?t='+Date.now(),{cache:'no-store'});if(!res.ok)return;const data=await res.json();if(data.version&&data.version!==APP_VERSION){showUpdating();try{await reg.update()}catch(e){};if(reg.waiting)reg.waiting.postMessage('SKIP_WAITING');setTimeout(()=>{if(!appReloading){appReloading=true;location.replace('./?v='+(data.cache||Date.now()))}},1800)}}catch(e){}}
 if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('controllerchange',()=>{if(appReloading)return;appReloading=true;showUpdating();location.reload()});navigator.serviceWorker.register('./sw.js?v='+APP_CACHE,{updateViaCache:'none'}).then(async r=>{try{await r.update()}catch(e){};if(r.waiting){showUpdating();r.waiting.postMessage('SKIP_WAITING')}r.addEventListener('updatefound',()=>{const w=r.installing;if(w)w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){showUpdating();w.postMessage('SKIP_WAITING')}})});checkAppVersion(r);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){r.update().catch(()=>{});checkAppVersion(r)}});window.addEventListener('focus',()=>checkAppVersion(r));setInterval(()=>checkAppVersion(r),60000)}).catch(()=>{})}render()})();
-</script><script src="./riddles.js?v=0880"></script><script src="./maze.js?v=0880"></script><script src="./math.js?v=0880"></script><script src="./trace.js?v=0883"></script><script src="./kanji.js?v=0883"></script><script src="./clock.js?v=0883"></script>\n<script src="./race.js?v=0898"></script><script src="./brain-games.js?v=0908"></script><script>
+</script><script src="./riddles.js?v=0880"></script><script src="./maze.js?v=0880"></script><script src="./math.js?v=0880"></script><script src="./trace.js?v=0883"></script><script src="./kanji.js?v=0883"></script><script src="./clock.js?v=0883"></script>\n<script src="./race.js?v=0898"></script><script src="./brain-games.js?v=0909"></script><script>
 (()=>{
  const defs={
   cinna:[['','はだか','./assets/cinnamoroll.webp'],['sailor','せーらー','./assets/cinna-sailor.webp'],['dress','どれす','./assets/cinna-dress.png'],['parka','ぱーかー','./assets/cinna-parka.png'],['sleep','ねむねむ','./assets/cinna-sleep.png'],['prince','ぷりんす','./assets/cinna-prince.png']],
