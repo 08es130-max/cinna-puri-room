@@ -2,78 +2,107 @@
 const btn=document.querySelector('.minisel[data-mini="race"]');
 const playMenu=document.getElementById('playMenu'),miniArea=document.getElementById('miniArea'),miniTitle=document.getElementById('miniTitle'),game=document.getElementById('game'),start=document.getElementById('start'),gameMsg=document.getElementById('gameMsg'),miniBack=document.getElementById('miniBack');
 if(!btn||!playMenu||!miniArea||!game)return;
-const balls=[['red','あか','🔴'],['blue','あお','🔵'],['yellow','きいろ','🟡'],['green','みどり','🟢']];
+const B=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55b86a','みどり']],NS='http://www.w3.org/2000/svg';
+let level='easy',stage=0,choice=-1,running=false,raf=0;
 const labels={easy:'かんたん',normal:'ふつう',hard:'むずかしい'};
-let level='easy',stage=0,running=false,choice=-1,raf=0;
-function makeStages(lv){
- const out=[];
- for(let i=0;i<20;i++){
-  const rot=i%4,base=lv==='easy'?[72,84,96,108]:lv==='normal'?[76,90,104,118]:[80,96,112,128];
-  const dist=base.map((_,j)=>base[(j+rot)%4]+((i*7+j*3)%9));
-  const obstacles=dist.map((d,j)=>{
-   if(lv==='easy')return i<8?[]:((j+i)%4===0?[{x:52,type:'bump',cost:11}]:[]);
-   if(lv==='normal'){const n=(j+i)%4;return n===0?[{x:38,type:'bump',cost:10},{x:70,type:'bridge',cost:14}]:n===1?[{x:58,type:'curve',cost:10}]:n===2?[{x:48,type:'gate',cost:17}]:[]}
-   const n=(j+i)%4;return n===0?[{x:27,type:'bump',cost:11},{x:55,type:'gate',cost:20},{x:77,type:'curve',cost:12}]:n===1?[{x:35,type:'bridge',cost:16},{x:68,type:'bump',cost:11}]:n===2?[{x:31,type:'curve',cost:12},{x:61,type:'gate',cost:20}]:[{x:48,type:'bridge',cost:16}];
-  });
-  const totals=dist.map((d,j)=>d+obstacles[j].reduce((n,o)=>n+o.cost,0));
-  out.push({dist,obstacles,totals,winner:totals.indexOf(Math.min(...totals))});
- }
- return out;
+function svgEl(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
+function easyStage(i){
+ const win=i%4,extra=[0,0,0,0].map((_,j)=>18+((j-win+4)%4)*17+((i*5+j*7)%9));
+ extra[win]=4+(i%5)*2;
+ return {kind:'easy',paths:extra.map((x,j)=>[[8,16+j*22],[30,16+j*22+(j%2?x*.13:-x*.13)],[58,16+j*22-(j%2?x*.1:-x*.1)],[92,16+j*22]]),obs:[[],[],[],[]]};
 }
-const stages={easy:makeStages('easy'),normal:makeStages('normal'),hard:makeStages('hard')};
+function sharedStage(i,hard){
+ const starts=[[7,13],[7,35],[7,65],[7,87]],mergeX=hard?58:50,gy=50;
+ const paths=[],obs=[];
+ for(let j=0;j<4;j++){
+  const bend=((i*11+j*17)%23)-11;
+  const midY=Math.max(9,Math.min(91,starts[j][1]+bend));
+  const pre=hard?[[7,starts[j][1]],[24,midY],[40,starts[j][1]+(j<2?12:-12)],[mergeX,gy]]:[[7,starts[j][1]],[28,midY],[mergeX,gy]];
+  paths.push([...pre,[74,gy+(i%2?8:-8)],[94,50]]);
+  const arr=[];
+  const n=(i+j)%4;
+  if(!hard){
+   if(n===0)arr.push({seg:1,t:.55,type:'hill',delay:8});
+   if(n===1)arr.push({seg:1,t:.48,type:'gate',delay:14});
+   if(n===2)arr.push({seg:1,t:.5,type:'bridge',delay:10});
+  }else{
+   if(n===0)arr.push({seg:1,t:.45,type:'hill',delay:10},{seg:2,t:.55,type:'gate',delay:16});
+   if(n===1)arr.push({seg:1,t:.52,type:'spinner',delay:18});
+   if(n===2)arr.push({seg:1,t:.4,type:'bridge',delay:10},{seg:2,t:.5,type:'hill',delay:9});
+   if(n===3)arr.push({seg:2,t:.48,type:'gate',delay:16});
+  }
+  obs.push(arr);
+ }
+ return {kind:'shared',paths,obs};
+}
+const stages={easy:Array.from({length:20},(_,i)=>easyStage(i)),normal:Array.from({length:20},(_,i)=>sharedStage(i,false)),hard:Array.from({length:20},(_,i)=>sharedStage(i,true))};
 function chooseLevel(){
  cancelAnimationFrame(raf);running=false;
- game.innerHTML='<div class="racelevels"><div class="racehead">どの こーすに する？</div><button data-l="easy">🌱<b>かんたん</b><small>みちの ながさを よく みよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>しょうがいぶつも あるよ</small></button><button data-l="hard">🔥<b>むずかしい</b><small>みちと しょうがいぶつを くらべよう</small></button></div>';
+ game.innerHTML='<div class="racelevels"><div class="racehead">どの こーすに する？</div><button data-l="easy">🌱<b>かんたん</b><small>4つの みちの ながさを くらべよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>べつの みちから おなじ ごーるへ</small></button><button data-l="hard">🔥<b>むずかしい</b><small>さかや しかけも よく みよう</small></button></div>';
  game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;showStage()});
 }
-function icon(t){return t==='bump'?'▲':t==='bridge'?'╱╲':t==='gate'?'▥':'〰'}
-function pathFor(d,j){
- const wig=Math.max(0,d-72),a=8+Math.min(20,wig*.35),phase=(j%2?1:-1);
- return 'M 7 50 C 25 '+(50-a*phase)+' 38 '+(50+a*phase)+' 53 50 S 78 '+(50-a*phase)+' 94 50';
+function pathD(p){return p.map((q,k)=>(k?'L':'M')+' '+q[0]+' '+q[1]).join(' ')}
+function obstacleGroup(type,x,y){
+ const g=svgEl('g',{class:'racefixture '+type,transform:'translate('+x+' '+y+')'});
+ if(type==='hill'){g.append(svgEl('path',{d:'M -5 3 Q 0 -6 5 3',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-6,'text-anchor':'middle'});t.textContent='さか';g.append(t)}
+ if(type==='gate'){g.append(svgEl('path',{d:'M -4 4 L -4 -5 L 4 -5 L 4 4',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-7,'text-anchor':'middle'});t.textContent='げーと';g.append(t)}
+ if(type==='bridge'){g.append(svgEl('path',{d:'M -6 3 Q 0 -5 6 3 M -6 3 L 6 3',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-6,'text-anchor':'middle'});t.textContent='はし';g.append(t)}
+ if(type==='spinner'){g.append(svgEl('circle',{r:4,class:'fixture-shape'}));g.append(svgEl('path',{d:'M -6 0 L 6 0 M 0 -6 L 0 6',class:'fixture-shape spin'}));const t=svgEl('text',{x:0,y:-8,'text-anchor':'middle'});t.textContent='くるくる';g.append(t)}
+ return g;
 }
+function metrics(p,obs){
+ let total=0;const seg=[];
+ for(let i=0;i<p.length-1;i++){const dx=p[i+1][0]-p[i][0],dy=p[i+1][1]-p[i][1],l=Math.hypot(dx,dy);seg.push({l,dx,dy});total+=l}
+ let cost=total;
+ for(const s of seg){const slope=s.dy/s.l;cost+=Math.max(-.25,Math.min(.35,-slope*.28))*s.l}
+ cost+=obs.reduce((n,o)=>n+o.delay,0);
+ return {total,seg,cost};
+}
+function pointOn(p,m,d){
+ let left=d;
+ for(let i=0;i<m.seg.length;i++){const s=m.seg[i];if(left<=s.l){const t=left/s.l;return{x:p[i][0]+s.dx*t,y:p[i][1]+s.dy*t,angle:Math.atan2(s.dy,s.dx)*180/Math.PI,seg:i,t}}left-=s.l}
+ const a=p[p.length-2],z=p[p.length-1];return{x:z[0],y:z[1],angle:Math.atan2(z[1]-a[1],z[0]-a[0])*180/Math.PI,seg:m.seg.length-1,t:1}
+}
+function obstaclePoint(p,o){const a=p[o.seg],b=p[o.seg+1];return{x:a[0]+(b[0]-a[0])*o.t,y:a[1]+(b[1]-a[1])*o.t}}
 function showStage(){
  cancelAnimationFrame(raf);running=false;choice=-1;const s=stages[level][stage];game.innerHTML='';
- const box=document.createElement('div');box.className='racebox';
- box.innerHTML='<div class="racehead">'+labels[level]+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが いちばん はやく ごーるする？</div>';
- const course=document.createElement('div');course.className='racecourse';
- balls.forEach((b,j)=>{
-  const lane=document.createElement('div');lane.className='racelane';
-  lane.innerHTML='<div class="raceballstart">'+b[2]+'</div><svg class="racepath" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="'+pathFor(s.dist[j],j)+'"/></svg><div class="raceobstacles"></div><div class="racegoal">🏁</div><div class="raceball '+b[0]+'" data-ball="'+j+'"></div>';
-  const obs=lane.querySelector('.raceobstacles');
-  s.obstacles[j].forEach(o=>{const x=document.createElement('span');x.className='raceobs '+o.type;x.style.left=o.x+'%';x.textContent=icon(o.type);obs.appendChild(x)});
-  course.appendChild(lane);
+ const box=document.createElement('div');box.className='racebox';box.innerHTML='<div class="racehead">'+labels[level]+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが いちばん はやいかな？</div>';
+ const svg=svgEl('svg',{class:'raceworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
+ const defs=svgEl('defs');const pat=svgEl('pattern',{id:'finishCheck',width:4,height:4,patternUnits:'userSpaceOnUse'});pat.append(svgEl('rect',{width:2,height:2,fill:'#333'}),svgEl('rect',{x:2,y:2,width:2,height:2,fill:'#333'}));defs.append(pat);svg.append(defs);
+ if(s.kind==='shared'){svg.append(svgEl('rect',{x:92,y:43,width:5,height:14,fill:'url(#finishCheck)',class:'sharedfinish'}))}
+ const mets=s.paths.map((p,j)=>{
+  const path=svgEl('path',{d:pathD(p),class:'realtrack','data-i':j});svg.append(path);
+  if(s.kind==='easy'){const z=p[p.length-1];svg.append(svgEl('rect',{x:z[0]-1,y:z[1]-5,width:4,height:10,fill:'url(#finishCheck)'}))}
+  s.obs[j].forEach(o=>{const q=obstaclePoint(p,o);svg.append(obstacleGroup(o.type,q.x,q.y))});
+  const st=p[0];const ball=svgEl('circle',{cx:st[0],cy:st[1],r:2.8,fill:B[j][0],class:'physicsball','data-i':j});svg.append(ball);
+  return metrics(p,s.obs[j]);
  });
- const picks=document.createElement('div');picks.className='racepicks';
- balls.forEach((b,j)=>{const p=document.createElement('button');p.innerHTML=b[2]+'<br>'+b[1];p.onclick=()=>{if(running)return;choice=j;picks.querySelectorAll('button').forEach((x,k)=>x.classList.toggle('picked',k===j));go.disabled=false};picks.appendChild(p)});
- const go=document.createElement('button');go.className='racego';go.disabled=true;go.textContent='よそうした！　すたーと';go.onclick=()=>runRace(s,box);
- const msg=document.createElement('div');msg.className='racemsg';box.append(course,picks,go,msg);game.appendChild(box);
+ box.appendChild(svg);
+ const picks=document.createElement('div');picks.className='racepicks';B.forEach((b,j)=>{const p=document.createElement('button');p.innerHTML='<span style="color:'+b[0]+'">●</span><br>'+b[1];p.onclick=()=>{if(running)return;choice=j;[...picks.children].forEach((x,k)=>x.classList.toggle('picked',k===j));go.disabled=false};picks.append(p)});
+ const go=document.createElement('button');go.className='racego';go.disabled=true;go.textContent='よそうした！　すたーと';go.onclick=()=>runRace(s,mets,box,svg);
+ const msg=document.createElement('div');msg.className='racemsg';box.append(picks,go,msg);game.append(box);
 }
-function runRace(s,box){
+function runRace(s,mets,box,svg){
  if(running||choice<0)return;running=true;box.querySelector('.racego').disabled=true;box.querySelectorAll('.racepicks button').forEach(x=>x.disabled=true);
- const bs=[...box.querySelectorAll('.raceball')],startAt=performance.now(),max=Math.max(...s.totals),duration=3600;
- function frame(now){
-  let done=true;
-  bs.forEach((b,j)=>{
-   const p=Math.min(1,(now-startAt)/(duration*s.totals[j]/max));if(p<1)done=false;
-   b.style.left=(5+p*88)+'%';
-   const wob=Math.sin(p*Math.PI*6+j)*Math.min(9,Math.max(0,s.dist[j]-72)*.18);
-   b.style.transform='translate(-50%,calc(-50% + '+wob+'px)) rotate('+(p*900)+'deg)';
+ const states=mets.map(()=>({d:0,v:0.018,wait:0,hit:new Set(),done:false,time:0})),balls=[...svg.querySelectorAll('.physicsball')];let last=performance.now(),elapsed=0,finish=[];
+ function tick(now){
+  let dt=Math.min(32,now-last);last=now;elapsed+=dt;
+  states.forEach((st,j)=>{
+   if(st.done)return;if(st.wait>0){st.wait-=dt;return}
+   const q=pointOn(s.paths[j],mets[j],st.d),rad=q.angle*Math.PI/180;
+   const gravity=Math.sin(rad)*0.000018;st.v=Math.max(.012,Math.min(.052,st.v+gravity*dt));st.v*=Math.pow(.9996,dt);st.d+=st.v*dt;
+   s.obs[j].forEach((o,k)=>{const key=j+'-'+k;if(st.hit.has(key))return;const op=obstaclePoint(s.paths[j],o),oq=pointOn(s.paths[j],mets[j],st.d);if(Math.hypot(op.x-oq.x,op.y-oq.y)<4){st.hit.add(key);st.wait=o.delay*22;if(o.type==='hill')st.v*=.55;if(o.type==='bridge')st.v*=.72;if(o.type==='gate')st.v*=.35;if(o.type==='spinner')st.v*=.3}});
+   if(st.d>=mets[j].total){st.d=mets[j].total;st.done=true;st.time=elapsed;finish.push(j)}
+   const pos=pointOn(s.paths[j],mets[j],st.d);balls[j].setAttribute('cx',pos.x);balls[j].setAttribute('cy',pos.y);balls[j].style.transform='rotate('+(st.d*18)+'deg)';balls[j].style.transformOrigin=pos.x+'px '+pos.y+'px';
   });
-  if(!done){raf=requestAnimationFrame(frame);return}
-  running=false;finishRace(s,box);
+  if(states.every(x=>x.done)){running=false;finishRace(finish[0],box);return}raf=requestAnimationFrame(tick);
  }
- raf=requestAnimationFrame(frame);
+ raf=requestAnimationFrame(tick);
 }
-function finishRace(s,box){
- const win=balls[s.winner],msg=box.querySelector('.racemsg');
- msg.innerHTML=(choice===s.winner?'🎉 せいかい！':'おしい！')+'<br><b>'+win[2]+' '+win[1]+'が いちばん！</b><br><small>みちの ながさと しょうがいぶつを くらべてみよう</small>';
- const next=document.createElement('button');next.className='racenext';next.textContent=stage===19?'こーすを えらぶ':'つぎの こーす';next.onclick=()=>{if(stage===19)chooseLevel();else{stage++;showStage()}};msg.appendChild(next);
+function finishRace(winner,box){
+ const msg=box.querySelector('.racemsg'),w=B[winner];msg.innerHTML=(choice===winner?'🎉 せいかい！':'おしい！')+'　<b><span style="color:'+w[0]+'">●</span> '+w[1]+'が いちばん！</b><br><small>みちの ながさ・さか・しかけを もういちど みてみよう</small>';
+ const n=document.createElement('button');n.className='racenext';n.textContent=stage===19?'こーすを えらぶ':'つぎの こーす';n.onclick=()=>{if(stage===19)chooseLevel();else{stage++;showStage()}};msg.append(n);
 }
-function open(){
- playMenu.style.display='none';miniArea.style.display='block';
- miniArea.classList.remove('hide-mode','riddle-mode','maze-mode','math-mode','trace-mode','kanji-mode','clock-mode');miniArea.classList.add('race-mode');
- miniTitle.textContent='ころころ よそうれーす';start.style.display='none';gameMsg.style.display='none';chooseLevel();
-}
-btn.onclick=open;
+btn.onclick=()=>{playMenu.style.display='none';miniArea.style.display='block';miniArea.classList.remove('hide-mode','riddle-mode','maze-mode','math-mode','trace-mode','kanji-mode','clock-mode');miniArea.classList.add('race-mode');miniTitle.textContent='ころころ よそうれーす';start.style.display='none';gameMsg.style.display='none';chooseLevel()};
 miniBack.addEventListener('click',()=>{cancelAnimationFrame(raf);running=false;miniArea.classList.remove('race-mode')});
 })();
