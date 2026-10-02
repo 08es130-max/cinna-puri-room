@@ -7,7 +7,7 @@ function shell(title,body){game.innerHTML='<div class="brainbox"><div class="bra
 function home(){mode='';miniTitle.textContent='かんがえる げーむ';shell('どれで あそぶ？','<div class="brainmenu"><button data-b="pattern">🔮<b>つぎは なに？</b><small>ならびの ひみつを みつけよう</small></button><button data-b="detective">🕵️<b>すうじ たんてい</b><small>ひんとから すうじを みつけよう</small></button><button data-b="blocks">🧊<b>なんこで できる？</b><small>つみきを かぞえよう</small></button></div>');game.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>choose(b.dataset.b))}
 function choose(m){mode=m;shell(m==='pattern'?'つぎは なに？':m==='detective'?'すうじ たんてい':'なんこで できる？','<div class="brainlevels"><button data-l="easy">🌱<b>かんたん</b></button><button data-l="normal">🌼<b>ふつう</b></button><button data-l="hard">🔥<b>むずかしい</b></button></div><button class="brainback" id="brainHome">← げーむを えらぶ</button>');game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;q=0;next()});document.getElementById('brainHome').onclick=home}
 function next(){locked=false;q++;game.classList.remove('brain-pattern','brain-detective','brain-blocks');game.classList.add('brain-'+mode);if(mode==='pattern')pattern();else if(mode==='detective')detective();else blocks()}
-function choices(vals){return '<div class="brainchoices">'+vals.map(v=>'<button data-a="'+v+'">'+v+'</button>').join('')+'</div>'}
+function choices(vals){return '<div class="brainchoices">'+vals.map(v=>{const o=(v&&typeof v==='object')?v:{value:String(v),label:v};return '<button data-a="'+String(o.value).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')+'">'+o.label+'</button>'}).join('')+'</div>'}
 function bind(correct,explain){answer=String(correct);game.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(locked)return;if(b.dataset.a===answer){locked=true;b.classList.add('correct');const m=document.getElementById('brainMsg');m.innerHTML='🎉 せいかい！<br><small>'+explain+'</small><br><button id="brainNext">つぎの もんだい</button>';document.getElementById('brainNext').onclick=next}else{b.classList.add('wrong');document.getElementById('brainMsg').textContent='おしい！ もういちど みてみよう'}})}
 function pattern(){
  const colors=['🔴','🔵','🟡','🟢','🟣','🟠'],shapes=['●','▲','■','★','◆'],icons=[...colors,'⭐','❤️','▲','■'];
@@ -34,11 +34,13 @@ function pattern(){
   if(kind===0){
    const s=1+rnd(3),step=pick([2,3,4]);seq=[s,s+step,s+step*2,s+step*3,'？'];ans=s+step*4;opts=shuffle([ans,ans+step,ans-step,ans+1]);why=step+'ずつ おおきく なっているよ';
   }else{
-   const cs=shuffle(colors).slice(0,kind===1?3:4),ss=shuffle(shapes).slice(0,kind===3?3:2),items=[];
-   for(let i=0;i<6;i++){const col=cs[i%cs.length],sh=ss[Math.floor(i/cs.length)%ss.length];items.push('<span class="combo"><i>'+col+'</i><b>'+sh+'</b></span>')}
-   const ci=6%cs.length,si=Math.floor(6/cs.length)%ss.length;ans=cs[ci]+'|'+ss[si];seq=[...items,'？'];
+   const cs=shuffle(colors).slice(0,kind===1?3:4),ss=shuffle(shapes).slice(0,kind===3?3:2),raw=[];
+   const make=(co,sh)=>'<span class="combo"><i>'+co+'</i><b>'+sh+'</b></span>';
+   for(let i=0;i<7;i++){raw.push({co:cs[i%cs.length],sh:ss[Math.floor(i/cs.length)%ss.length]})}
+   seq=raw.slice(0,6).map(o=>make(o.co,o.sh)).concat('？');
+   ans=raw[6].co+'|'+raw[6].sh;
    const candidates=[];for(const co of cs)for(const sh of ss)candidates.push(co+'|'+sh);
-   opts=shuffle([ans,...shuffle(candidates.filter(x=>x!==ans)).slice(0,3)]).map(x=>{const [co,sh]=x.split('|');return '<span class="combo"><i>'+co+'</i><b>'+sh+'</b></span>'});
+   opts=shuffle([ans,...shuffle(candidates.filter(x=>x!==ans)).slice(0,3)]).map(v=>{const [co,sh]=v.split('|');return {value:v,label:make(co,sh)}});
    why='いろと かたちの 2つの きまりを みつけよう';
   }
  }
@@ -55,11 +57,23 @@ function detective(){
 function blocks(){
  let heights,ans,scene;
  if(level==='hard'){
-  const w=2+rnd(2),d=2+rnd(2),grid=Array.from({length:d},()=>Array.from({length:w},()=>1+rnd(3)));
-  ans=grid.flat().reduce((a,b)=>a+b,0);
-  const cubes=[];
-  for(let y=d-1;y>=0;y--)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++)cubes.push('<span class="cube3d" style="--x:'+x+';--y:'+y+';--z:'+z+'"></span>');
-  scene='<div class="blockscene block3d" aria-label="りったいの つみき"><div class="cubeplane">'+cubes.join('')+'</div></div>';
+  const presets=[
+   [[2,1],[1,2]],
+   [[1,2,1],[2,1,2]],
+   [[3,1],[2,2],[1,1]],
+   [[1,2,1],[2,3,1],[1,1,2]],
+   [[2,2,1],[1,3,2]]
+  ];
+  const grid=pick(presets),d=grid.length,w=grid[0].length;ans=grid.flat().reduce((a,b)=>a+b,0);
+  const size=34,ox=150,oy=38,dx=30,dy=16,dz=28,parts=[];
+  for(let y=d-1;y>=0;y--)for(let x=w-1;x>=0;x--)for(let z=0;z<grid[y][x];z++){
+   const cx=ox+(x-y)*dx,cy=oy+(x+y)*dy-z*dz;
+   const top=cx+','+cy+' '+(cx+dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+(cx-dx)+','+(cy+dy);
+   const left=(cx-dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+cx+','+(cy+dy*2+dz)+' '+(cx-dx)+','+(cy+dy+dz);
+   const right=(cx+dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+cx+','+(cy+dy*2+dz)+' '+(cx+dx)+','+(cy+dy+dz);
+   parts.push('<g class="isoCube"><polygon class="ctop" points="'+top+'"/><polygon class="cleft" points="'+left+'"/><polygon class="cright" points="'+right+'"/></g>');
+  }
+  scene='<div class="blockscene block3d" aria-label="りったいの つみき"><svg class="isoBlocks" viewBox="0 0 300 190" role="img" aria-label="りったいに つまれた つみき">'+parts.join('')+'</svg></div>';
  }else{
   heights=level==='easy'?shuffle([1,1,1,2].slice(0,3+rnd(2))):Array.from({length:4+rnd(2)},()=>1+rnd(3));
   ans=heights.reduce((a,b)=>a+b,0);
