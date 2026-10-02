@@ -76,17 +76,36 @@ function bindInk(){
  ink.onpointerup=ink.onpointercancel=()=>{drawing=false;last=null};
 }
 function saveDrawing(){drawings[charIndex]=ink.toDataURL('image/png')}
+async function getKanjiStrokeSvg(ch){
+ const cp=ch.codePointAt(0).toString(16).padStart(5,'0');
+ const urls=[
+  'https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/'+cp+'.svg',
+  'https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/'+cp+'.svg'
+ ];
+ const cacheName='nakayoshi-kanji-strokes-v2';
+ const key=new Request(location.origin+'/__kanji_guide__/'+cp+'.svg');
+ if('caches'in window){
+  try{
+   const cc=await caches.open(cacheName),hit=await cc.match(key);
+   if(hit){const txt=await hit.text();if(txt)return txt}
+   for(const u of urls)for(let attempt=0;attempt<2;attempt++){
+    try{
+     const res=await fetch(u,{cache:attempt?'reload':'force-cache'});
+     if(res.ok){const txt=await res.text();if(txt){await cc.put(key,new Response(txt,{headers:{'Content-Type':'image/svg+xml'}}));return txt}}
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,120));
+   }
+  }catch(e){}
+ }else{
+  for(const u of urls){try{const res=await fetch(u,{cache:'no-cache'});if(res.ok)return await res.text()}catch(e){}}
+ }
+ return '';
+}
 async function showStrokeDemo(ch,b){
  const token=++demoToken;b.disabled=true;b.textContent='よみこみちゅう…';
  const host=game.querySelector('.kanjiguide');
  try{
-  const cp=ch.codePointAt(0).toString(16).padStart(5,'0');
-  const urls=[
-   'https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/'+cp+'.svg',
-   'https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/'+cp+'.svg'
-  ];
-  let txt='';
-  for(const u of urls){try{const res=await fetch(u,{cache:'force-cache'});if(res.ok){txt=await res.text();break}}catch(e){}}
+  const txt=await getKanjiStrokeSvg(ch);
   if(!txt)throw new Error('stroke data');
   if(token!==demoToken)return;
   host.innerHTML=txt;
