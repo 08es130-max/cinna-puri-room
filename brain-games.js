@@ -57,25 +57,25 @@ function blocks(){
     return {x:rx,y:ry,z,sx:rx,sy:ry*tilt-z,depth:ry};
   };
   const faces=[];
+  const occupied=(x,y,z)=>x>=0&&x<w&&y>=0&&y<d&&z>=0&&z<grid[y][x];
   const pushFace=(verts,kind,nx,ny,nz)=>{
-    const rcx=nx*ca-ny*sa,rcy=nx*sa+ny*ca;
-    const viewDot=rcy*tilt+nz;
     const p=verts.map(v=>proj(...v));
-    /* Keep boundary-facing surfaces. Exact culling near 90deg caused visible holes while dragging. */
-    if(viewDot < -0.035)return;
-    faces.push({p,kind,depth:p.reduce((s,v)=>s+v.depth,0)/p.length});
+    const rcx=nx*ca-ny*sa,rcy=nx*sa+ny*ca;
+    const facing=rcy*tilt+nz;
+    faces.push({p,kind,facing,depth:p.reduce((s,v)=>s+v.depth,0)/p.length});
   };
   for(let y=0;y<d;y++)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++){
-    pushFace([[x,y,z+1],[x+1,y,z+1],[x+1,y+1,z+1],[x,y+1,z+1]],'top',0,0,1);
-    if(x===0)pushFace([[x,y,z],[x,y+1,z],[x,y+1,z+1],[x,y,z+1]],'left',-1,0,0);
-    if(x===w-1)pushFace([[x+1,y,z],[x+1,y,z+1],[x+1,y+1,z+1],[x+1,y+1,z]],'right',1,0,0);
-    if(y===0)pushFace([[x,y,z],[x,y,z+1],[x+1,y,z+1],[x+1,y,z]],'left',0,-1,0);
-    if(y===d-1)pushFace([[x,y+1,z],[x+1,y+1,z],[x+1,y+1,z+1],[x,y+1,z+1]],'right',0,1,0);
+    if(!occupied(x,y,z+1))pushFace([[x,y,z+1],[x+1,y,z+1],[x+1,y+1,z+1],[x,y+1,z+1]],'top',0,0,1);
+    if(!occupied(x-1,y,z))pushFace([[x,y,z],[x,y+1,z],[x,y+1,z+1],[x,y,z+1]],'sideA',-1,0,0);
+    if(!occupied(x+1,y,z))pushFace([[x+1,y,z],[x+1,y,z+1],[x+1,y+1,z+1],[x+1,y+1,z]],'sideB',1,0,0);
+    if(!occupied(x,y-1,z))pushFace([[x,y,z],[x,y,z+1],[x+1,y,z+1],[x+1,y,z]],'sideA',0,-1,0);
+    if(!occupied(x,y+1,z))pushFace([[x,y+1,z],[x+1,y+1,z],[x+1,y+1,z+1],[x,y+1,z+1]],'sideB',0,1,0);
+    if(z===0)pushFace([[x,y,z],[x+1,y,z],[x+1,y+1,z],[x,y+1,z]],'bottom',0,0,-1);
   }
   const all=faces.flatMap(f=>f.p),minX=Math.min(...all.map(p=>p.sx)),maxX=Math.max(...all.map(p=>p.sx)),minY=Math.min(...all.map(p=>p.sy)),maxY=Math.max(...all.map(p=>p.sy));
   const scale=Math.min((W-70)/(maxX-minX||1),(H-60)/(maxY-minY||1)),ox=W/2-(minX+maxX)*scale/2,oy=H/2-(minY+maxY)*scale/2;
   faces.sort((a,b)=>a.depth-b.depth);
-  const fill={top:'#a8e3fa',left:'#73c5e8',right:'#55add5'};
+  const fill={top:'#a8e3fa',sideA:'#73c5e8',sideB:'#55add5',bottom:'#55add5'};
   ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='#368fbd';
   for(const f of faces){ctx.beginPath();f.p.forEach((p,i)=>{const X=ox+p.sx*scale,Y=oy+p.sy*scale;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.closePath();ctx.fillStyle=fill[f.kind];ctx.fill();ctx.stroke()}
  };
