@@ -5,27 +5,45 @@ const C=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55
 let level='easy',stage=0,choice=-1,running=false,raf=0;
 function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function stageData(mode,i){
- const starts=[14,38,62,86],winner=i%4,lanes=[];
- // Each ball stays in its own visible vertical lane. No crossing or hidden route changes.
- const widths=mode==='easy'?[1,5,8,11]:mode==='normal'?[2,6,9,12]:[3,7,10,13];
- const turns=mode==='easy'?[0,2,3,4]:mode==='normal'?[1,3,4,5]:[2,4,5,6];
+ const starts=[14,38,62,86],winner=(i*3+(mode==='normal'?1:mode==='hard'?2:0))%4,lanes=[];
+ const variants=i%5;
  for(let j=0;j<4;j++){
-  const rank=(j-winner+4)%4,sx=starts[j],w=widths[rank],n=turns[rank];
-  const pts=[[sx,8]];
-  if(n===0){pts.push([sx,88]);}
-  else{
+  const rank=(j-winner+4)%4,sx=starts[j],pts=[[sx,8]];
+  if(mode==='easy'){
+   // Easy: obvious route-length comparison: straight, one detour, two detours, long detour.
+   const amp=[0,4.5,7.5,10.5][rank]+variants*.35;
+   const n=[0,1,2,3][rank];
+   if(n===0) pts.push([sx,88]);
+   else{
+    for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+variants)%2?1:-1;pts.push([sx+dir*amp,y])}
+    pts.push([sx,88]);
+   }
+  }else if(mode==='normal'){
+   // Normal: all routes bend, but number and size of detours differ.
+   const n=[2,3,4,5][rank],amp=[3.5,5,6.5,8][rank]+(variants%3)*.45;
    for(let k=1;k<=n;k++){
-    const y=8+(80*k/(n+1));
-    const dir=k%2?1:-1;
-    pts.push([sx+dir*w,y]);
+    const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;
+    const wave=amp*(k%2?1:.72);
+    pts.push([sx+dir*wave,y]);
+   }
+   pts.push([sx,88]);
+  }else{
+   // Hard: same vertical goal, but different combinations of broad and tight detours.
+   const n=[4,5,6,7][rank],base=[4.8,5.8,6.8,7.8][rank];
+   for(let k=1;k<=n;k++){
+    const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;
+    let amp=base*(1+(((k+variants)%3)-1)*.22);
+    if(rank>1&&k===Math.ceil(n/2)) amp+=2.2;
+    pts.push([sx+dir*amp,y]);
    }
    pts.push([sx,88]);
   }
+  pts.forEach(p=>p[0]=Math.max(sx-10.5,Math.min(sx+10.5,p[0])));
   lanes.push({pts,rank});
  }
  return {starts,lanes,winner};
 }
-function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>みちの ながさを くらべよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>さかの かたちも みよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>まがりみちが ふえるよ</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;show()})}
+function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>ながい みちと みじかい みち</small></button><button data-l="normal">🌼<b>ふつう</b><small>まがりかたも くらべよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>よく みないと まようかも！</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;show()})}
 function pathD(p){return p.map((q,k)=>(k?'L':'M')+q[0]+' '+q[1]).join(' ')}
 function show(){
  cancelAnimationFrame(raf);running=false;choice=-1;const st=stageData(level,stage);game.innerHTML='';
