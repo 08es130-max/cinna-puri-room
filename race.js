@@ -6,35 +6,22 @@ let level='easy',stage=0,choice=-1,running=false,raf=0;
 function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function stageData(mode,i){
  const starts=[14,38,62,86],winner=i%4,lanes=[];
- // Four deliberately different independent chutes. The winning chute is visibly the shortest.
- const shapes={
-  easy:[
-   [[0,0],[0,24],[0,48],[0,72],[0,84]],
-   [[0,0],[12,22],[-10,44],[10,66],[0,84]],
-   [[0,0],[-17,18],[15,37],[-16,57],[13,75],[0,84]],
-   [[0,0],[20,15],[-18,30],[20,45],[-18,60],[18,74],[0,84]]
-  ],
-  normal:[
-   [[0,0],[5,20],[-4,41],[5,62],[0,84]],
-   [[0,0],[15,18],[-13,38],[14,58],[-8,76],[0,84]],
-   [[0,0],[-19,16],[17,33],[-17,51],[16,68],[-8,79],[0,84]],
-   [[0,0],[21,14],[-19,29],[20,44],[-19,59],[18,73],[0,84]]
-  ],
-  hard:[
-   [[0,0],[8,17],[-7,35],[8,53],[-6,70],[0,84]],
-   [[0,0],[16,15],[-14,31],[15,48],[-13,65],[8,78],[0,84]],
-   [[0,0],[-20,13],[18,27],[-19,42],[18,57],[-16,71],[8,80],[0,84]],
-   [[0,0],[22,12],[-20,25],[21,38],[-20,51],[20,64],[-18,76],[0,84]]
-  ]
- };
- const set=shapes[mode];
+ // Each ball stays in its own visible vertical lane. No crossing or hidden route changes.
+ const widths=mode==='easy'?[1,5,8,11]:mode==='normal'?[2,6,9,12]:[3,7,10,13];
+ const turns=mode==='easy'?[0,2,3,4]:mode==='normal'?[1,3,4,5]:[2,4,5,6];
  for(let j=0;j<4;j++){
-  const difficulty=(j-winner+4)%4,raw=set[difficulty],sx=starts[j];
-  const ex=46+j*3, pts=raw.map((p,k)=>{
-   const t=k/(raw.length-1),center=sx*(1-t)+ex*t;
-   return [Math.max(7,Math.min(93,center+p[0]*(1-t*.35))),8+p[1]];
-  });
-  lanes.push({pts,rank:difficulty});
+  const rank=(j-winner+4)%4,sx=starts[j],w=widths[rank],n=turns[rank];
+  const pts=[[sx,8]];
+  if(n===0){pts.push([sx,88]);}
+  else{
+   for(let k=1;k<=n;k++){
+    const y=8+(80*k/(n+1));
+    const dir=k%2?1:-1;
+    pts.push([sx+dir*w,y]);
+   }
+   pts.push([sx,88]);
+  }
+  lanes.push({pts,rank});
  }
  return {starts,lanes,winner};
 }
@@ -47,8 +34,8 @@ function show(){
  svg.append(E('rect',{x:3,y:4,width:94,height:91,rx:4,class:'machineback'}));
  // One common board: crossing ramps are scenery/rails; each ball follows gravity-safe downhill surfaces.
  st.lanes.forEach((l,j)=>{svg.append(E('path',{d:pathD(l.pts),class:'simplechute','data-lane':j}))});
- svg.append(E('rect',{x:5,y:92,width:90,height:3,class:'finishfloor'}));
- const gt=E('text',{x:50,y:90,'text-anchor':'middle',class:'gravitygoal'});gt.textContent='ごーる';svg.append(gt);
+ svg.append(E('rect',{x:5,y:91,width:90,height:3,class:'finishfloor'}));
+ const gt=E('text',{x:50,y:89.5,'text-anchor':'middle',class:'gravitygoal'});gt.textContent='ごーる';svg.append(gt);
  const balls=st.starts.map((x,j)=>{const b=E('circle',{cx:x,cy:8,r:2.7,fill:C[j][0],class:'physicsball'});svg.append(b);return b});
  box.append(svg);
  const picks=document.createElement('div');picks.className='racepicks';C.forEach((b,j)=>{const p=document.createElement('button');p.innerHTML='<span style="color:'+b[0]+'">●</span><br>'+b[1];p.onclick=()=>{if(running)return;choice=j;[...picks.children].forEach((x,k)=>x.classList.toggle('picked',k===j));go.disabled=false};picks.append(p)});
