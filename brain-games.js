@@ -60,8 +60,9 @@ function blocks(){
   const pushFace=(verts,kind,nx,ny,nz)=>{
     const rcx=nx*ca-ny*sa,rcy=nx*sa+ny*ca;
     const viewDot=rcy*tilt+nz;
-    if(viewDot<=0.001)return;
     const p=verts.map(v=>proj(...v));
+    /* Keep boundary-facing surfaces. Exact culling near 90deg caused visible holes while dragging. */
+    if(viewDot < -0.035)return;
     faces.push({p,kind,depth:p.reduce((s,v)=>s+v.depth,0)/p.length});
   };
   for(let y=0;y<d;y++)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++){
