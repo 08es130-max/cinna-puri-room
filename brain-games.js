@@ -74,7 +74,16 @@ function blocks(){
  }
  const wrong=new Set();while(wrong.size<3){const x=Math.max(1,ans-3+rnd(7));if(x!==ans)wrong.add(x)}
  shell(level==='hard'?'りったい つみき':'つみきは なんこ？','<div class="brainquestion">ぜんぶで なんこ あるかな？</div>'+scene+choices(shuffle([ans,...wrong])));
- if(grid){renderIso();document.querySelectorAll('.rotateBtns button').forEach(b=>b.onclick=()=>{angle=(angle+Number(b.dataset.turn)+4)%4;renderIso()})}
+ if(grid){
+  renderIso();
+  document.querySelectorAll('.rotateBtns button').forEach(b=>b.onclick=()=>{angle=(angle+Number(b.dataset.turn)+4)%4;renderIso()});
+  const svg=document.querySelector('.isoBlocks');
+  let sx=0,sy=0,drag=false;
+  const begin=e=>{const p=e.touches?e.touches[0]:e;sx=p.clientX;sy=p.clientY;drag=true};
+  const end=e=>{if(!drag)return;const p=e.changedTouches?e.changedTouches[0]:e,dx=p.clientX-sx,dy=p.clientY-sy;drag=false;if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)){angle=(angle+(dx<0?1:-1)+4)%4;renderIso()}};
+  svg.addEventListener('touchstart',begin,{passive:true});svg.addEventListener('touchend',end,{passive:true});
+  svg.addEventListener('pointerdown',begin);svg.addEventListener('pointerup',end);
+}
  bind(ans,level==='hard'?'みる ほうこうを かえると おくの つみきも わかるよ':'したから うえまで ひとつずつ かぞえてみよう')
 }
 btn.onclick=()=>{playMenu.style.display='none';miniArea.style.display='block';miniArea.className='brain-mode';start.style.display='none';gameMsg.style.display='none';home()};
