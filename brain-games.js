@@ -10,28 +10,32 @@ function next(){locked=false;q++;game.classList.remove('brain-pattern','brain-de
 function choices(vals){return '<div class="brainchoices">'+vals.map(v=>{const o=(v&&typeof v==='object')?v:{value:String(v),label:v};return '<button data-a="'+String(o.value).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')+'">'+o.label+'</button>'}).join('')+'</div>'}
 function bind(correct,explain){answer=String(correct);game.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{if(locked)return;if(b.dataset.a===answer){locked=true;b.classList.add('correct');const m=document.getElementById('brainMsg');m.innerHTML='🎉 せいかい！<br><small>'+explain+'</small><br><button id="brainNext">つぎの もんだい</button>';document.getElementById('brainNext').onclick=next}else{b.classList.add('wrong');document.getElementById('brainMsg').textContent='おしい！ もういちど みてみよう'}})}
 function pattern(){
- const simple=['🔴','🔵','🟡','🟢','🟣','🟠','⭐','❤️','▲','■'];
- let seq=[],ans,opts,why;
- if(level==='easy'||level==='normal'){
-  const pool=shuffle(simple),a=pool[0],b=pool[1],d=pool[2];
-  const pats=level==='easy'?[[a,b,a,b,a,'？']]:[[a,b,a,b,a,'？'],[a,a,b,a,a,b,'？'],[a,b,b,a,b,b,'？'],[a,b,d,a,b,d,'？'],[a,a,b,d,a,a,b,'？'],[a,b,a,d,a,b,a,'？']];
-  seq=pick(pats);const base=seq.slice(0,-1),period=level==='easy'?2:(base[0]===base[3]&&base[1]===base[4]?3:(base.length===6&&base[0]===base[4]?4:base.length));
-  ans=base[(base.length)%period]||base[0];
-  // derive the next item by finding the shortest repeating period
-  for(let p=1;p<=base.length;p++){let ok=true;for(let i=0;i<base.length;i++)if(base[i]!==base[i%p])ok=false;if(ok){ans=base[base.length%p];break}}
-  opts=shuffle([ans,...shuffle(simple.filter(x=>x!==ans)).slice(0,3)]);why='ならびの きまりを みつけよう';
+ const palette=[{id:'r',c:'#ef4444'},{id:'b',c:'#2684e8'},{id:'y',c:'#f4c928'},{id:'g',c:'#39b765'},{id:'p',c:'#a43de0'},{id:'o',c:'#ed8a13'}];
+ const forms=[{id:'c',s:'circle'},{id:'t',s:'triangle'},{id:'q',s:'square'},{id:'d',s:'diamond'}];
+ const token=o=>'<span class="ruleToken '+o.f.s+'" style="--rc:'+o.col.c+'"></span>';
+ const key=o=>o.col.id+'|'+o.f.id;
+ let raw=[],period=[],why;
+ if(level==='easy'){
+   const col=pick(palette),fs=shuffle(forms).slice(0,2);period=[{col,f:fs[0]},{col,f:fs[1]}];why='2つの かたちが じゅんばんに ならんでいるよ';
+ }else if(level==='normal'){
+   const cols=shuffle(palette).slice(0,2+rnd(2)),fs=shuffle(forms).slice(0,2+rnd(2)),kind=rnd(4);
+   if(kind===0) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[1]}];
+   if(kind===1) period=[{col:cols[0],f:fs[0]},{col:cols[0],f:fs[0]},{col:cols[1],f:fs[1]}];
+   if(kind===2) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[0]},{col:cols[0],f:fs[1]},{col:cols[1],f:fs[1]}];
+   if(kind===3) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[1]},{col:cols[2]||cols[0],f:fs[0]}];
+   why='いろと かたちの くりかえしを みつけよう';
  }else{
-  const palette=shuffle([{id:'r',c:'#ef4444'},{id:'b',c:'#2684e8'},{id:'y',c:'#f4c928'},{id:'g',c:'#39b765'},{id:'p',c:'#a43de0'},{id:'o',c:'#ed8a13'}]).slice(0,2+rnd(2));
-  const forms=shuffle([{id:'c',s:'circle'},{id:'t',s:'triangle'},{id:'q',s:'square'},{id:'d',s:'diamond'}]).slice(0,2+rnd(2));
-  const token=o=>'<span class="ruleToken '+o.f.s+'" style="--rc:'+o.col.c+'"></span>';
-  const period=[];for(let i=0;i<Math.max(palette.length,forms.length)*2;i++)period.push({col:palette[i%palette.length],f:forms[i%forms.length]});
-  const n=6,raw=Array.from({length:n+1},(_,i)=>period[i%period.length]);seq=raw.slice(0,n).map(token).concat('？');
-  const correct=raw[n];ans=correct.col.id+'|'+correct.f.id;
-  const cand=[];for(const col of palette)for(const fm of forms)cand.push({value:col.id+'|'+fm.id,label:token({col,f:fm})});
-  opts=shuffle([{value:ans,label:token(correct)},...shuffle(cand.filter(x=>x.value!==ans)).slice(0,3)]);
-  why='いろと かたちの きまりを いっしょに みつけよう';
+   const cols=shuffle(palette).slice(0,3),fs=shuffle(forms).slice(0,3),kind=rnd(3);
+   if(kind===0) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[1]},{col:cols[2],f:fs[2]}];
+   if(kind===1) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[0]},{col:cols[2],f:fs[1]},{col:cols[0],f:fs[1]}];
+   if(kind===2) period=[{col:cols[0],f:fs[0]},{col:cols[1],f:fs[1]},{col:cols[2],f:fs[0]},{col:cols[0],f:fs[2]}];
+   why='いろと かたち、りょうほうの きまりを みつけよう';
  }
- shell('もんだい '+q,'<div class="brainquestion">つぎに くるのは？</div><div class="patternrow pattern'+seq.length+'">'+seq.map(x=>'<span>'+x+'</span>').join('')+'</div>'+choices(opts));bind(ans,why)
+ const n=level==='hard'?7:6;raw=Array.from({length:n+1},(_,i)=>period[i%period.length]);const correct=raw[n],ans=key(correct);
+ const seq=raw.slice(0,n).map(token).concat('？');
+ const all=[];for(const col of palette)for(const f of forms)all.push({value:key({col,f}),label:token({col,f})});
+ const opts=shuffle([{value:ans,label:token(correct)},...shuffle(all.filter(x=>x.value!==ans)).slice(0,3)]);
+ shell('もんだい '+q,'<div class="brainquestion">つぎに くるのは？</div><div class="patternrow pattern'+seq.length+'">'+seq.map(x=>'<span class="patterncell">'+x+'</span>').join('')+'</div>'+choices(opts));bind(ans,why)
 }
 function detective(){
  let n,min,max,hints=[];
