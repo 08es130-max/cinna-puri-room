@@ -49,20 +49,28 @@ function blocks(){
  let heights,ans,scene,grid=null,angle=0;
  const renderIso=()=>{
   const svg=document.querySelector('.isoBlocks');if(!svg||!grid)return;
-  const d=grid.length,w=grid[0].length,rot=(x,y)=>angle===0?[x,y]:angle===1?[d-1-y,x]:angle===2?[w-1-x,d-1-y]:[y,w-1-x];
-  const cells=[];for(let y=0;y<d;y++)for(let x=0;x<w;x++){const [rx,ry]=rot(x,y);cells.push({x:rx,y:ry,h:grid[y][x]})}
-  const maxX=Math.max(...cells.map(o=>o.x)),maxY=Math.max(...cells.map(o=>o.y)),dx=27,dy=14,dz=27;
-  let minX=1e9,maxPX=-1e9,minY=1e9,maxPY=-1e9;
-  cells.forEach(o=>{const cx=(o.x-o.y)*dx,base=(o.x+o.y)*dy;minX=Math.min(minX,cx-dx);maxPX=Math.max(maxPX,cx+dx);minY=Math.min(minY,base-o.h*dz);maxPY=Math.max(maxPY,base+dy*2+dz)});
-  const vw=maxPX-minX+20,vh=maxPY-minY+20,ox=-minX+10,oy=-minY+10,parts=[];
-  cells.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
-  for(const o of cells)for(let z=0;z<o.h;z++){const cx=ox+(o.x-o.y)*dx,cy=oy+(o.x+o.y)*dy-z*dz;
-   const top=cx+','+cy+' '+(cx+dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+(cx-dx)+','+(cy+dy);
-   const left=(cx-dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+cx+','+(cy+dy*2+dz)+' '+(cx-dx)+','+(cy+dy+dz);
-   const right=(cx+dx)+','+(cy+dy)+' '+cx+','+(cy+dy*2)+' '+cx+','+(cy+dy*2+dz)+' '+(cx+dx)+','+(cy+dy+dz);
-   parts.push('<g class="isoCube"><polygon class="ctop" points="'+top+'"/><polygon class="cleft" points="'+left+'"/><polygon class="cright" points="'+right+'"/></g>');
+  const d=grid.length,w=grid[0].length,rad=angle*Math.PI/180,ca=Math.cos(rad),sa=Math.sin(rad),dx=25,dy=12.5,dz=25;
+  const cubes=[];
+  for(let y=0;y<d;y++)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++){
+    const px=x-(w-1)/2,py=y-(d-1)/2;
+    const rx=px*ca-py*sa,ry=px*sa+py*ca;
+    cubes.push({x:rx,y:ry,z});
   }
-  svg.setAttribute('viewBox','0 0 '+vw+' '+vh);svg.innerHTML=parts.join('');
+  cubes.sort((a,b)=>(a.x+a.y)-(b.x+b.y)||a.z-b.z);
+  const raw=[],xs=[],ys=[];
+  for(const o of cubes){
+    const cx=(o.x-o.y)*dx,cy=(o.x+o.y)*dy-o.z*dz;
+    const pts=[
+      [[cx,cy],[cx+dx,cy+dy],[cx,cy+dy*2],[cx-dx,cy+dy]],
+      [[cx-dx,cy+dy],[cx,cy+dy*2],[cx,cy+dy*2+dz],[cx-dx,cy+dy+dz]],
+      [[cx+dx,cy+dy],[cx,cy+dy*2],[cx,cy+dy*2+dz],[cx+dx,cy+dy+dz]]
+    ];
+    pts.flat().forEach(p=>{xs.push(p[0]);ys.push(p[1])});raw.push(pts);
+  }
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),pad=10,ox=-minX+pad,oy=-minY+pad;
+  const poly=p=>p.map(q=>(q[0]+ox).toFixed(1)+','+(q[1]+oy).toFixed(1)).join(' ');
+  svg.setAttribute('viewBox','0 0 '+(maxX-minX+pad*2)+' '+(maxY-minY+pad*2));
+  svg.innerHTML=raw.map(p=>'<g class="isoCube"><polygon class="ctop" points="'+poly(p[0])+'"/><polygon class="cleft" points="'+poly(p[1])+'"/><polygon class="cright" points="'+poly(p[2])+'"/></g>').join('');
  };
  if(level==='hard'){
   const presets=[[[2,1],[1,2]],[[1,2,1],[2,1,2]],[[3,1],[2,2],[1,1]],[[1,2,1],[2,3,1],[1,1,2]],[[2,2,1],[1,3,2]]];
@@ -76,13 +84,14 @@ function blocks(){
  shell(level==='hard'?'りったい つみき':'つみきは なんこ？','<div class="brainquestion">ぜんぶで なんこ あるかな？</div>'+scene+choices(shuffle([ans,...wrong])));
  if(grid){
   renderIso();
-  document.querySelectorAll('.rotateBtns button').forEach(b=>b.onclick=()=>{angle=(angle+Number(b.dataset.turn)+4)%4;renderIso()});
+  document.querySelectorAll('.rotateBtns button').forEach(b=>b.onclick=()=>{angle+=Number(b.dataset.turn)*30;renderIso()});
   const svg=document.querySelector('.isoBlocks');
-  let sx=0,sy=0,drag=false;
-  const begin=e=>{const p=e.touches?e.touches[0]:e;sx=p.clientX;sy=p.clientY;drag=true};
-  const end=e=>{if(!drag)return;const p=e.changedTouches?e.changedTouches[0]:e,dx=p.clientX-sx,dy=p.clientY-sy;drag=false;if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)){angle=(angle+(dx<0?1:-1)+4)%4;renderIso()}};
-  svg.addEventListener('touchstart',begin,{passive:true});svg.addEventListener('touchend',end,{passive:true});
-  svg.addEventListener('pointerdown',begin);svg.addEventListener('pointerup',end);
+  let lastX=0,drag=false,pid=null;
+  svg.style.touchAction='pan-y';
+  svg.addEventListener('pointerdown',e=>{drag=true;pid=e.pointerId;lastX=e.clientX;try{svg.setPointerCapture(pid)}catch(_){}});
+  svg.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;const dx=e.clientX-lastX;lastX=e.clientX;angle+=dx*0.65;renderIso()});
+  const stop=e=>{if(e.pointerId===pid){drag=false;pid=null}};
+  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);
 }
  bind(ans,level==='hard'?'みる ほうこうを かえると おくの つみきも わかるよ':'したから うえまで ひとつずつ かぞえてみよう')
 }
