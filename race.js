@@ -5,34 +5,65 @@ const C=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55
 let level='easy',stage=0,choice=-1,running=false,raf=0,order=[];
 function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function stageData(mode,i){
- const starts=[14,38,62,86],winner=(i*3+(mode==='normal'?1:mode==='hard'?2:0))%4,lanes=[];
- const variants=i%5;
+ if(mode==='hard') return geometryStage(i);
+ const starts=[14,38,62,86],winner=(i*3+(mode==='normal'?1:0))%4,lanes=[],variants=i%5;
  for(let j=0;j<4;j++){
   const rank=(j-winner+4)%4,sx=starts[j],pts=[[sx,8]];
   if(mode==='easy'){
    const amp=[0,4.5,7.5,10.5][rank]+variants*.35,n=[0,1,2,3][rank];
    if(n===0)pts.push([sx,88]);else{for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+variants)%2?1:-1;pts.push([sx+dir*amp,y])}pts.push([sx,88])}
-  }else if(mode==='normal'){
+  }else{
    const n=[2,3,4,5][rank],amp=[3.5,5,6.5,8][rank]+(variants%3)*.45;
    for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;pts.push([sx+dir*amp*(k%2?1:.72),y])}pts.push([sx,88]);
-  }else{
-   // Geometry mode: compare diagonals, sides and polygonal detours.
-   const top=8,bottom=88,mid=48,w=[0,5.5,8,10][rank]+(variants%2);
-   const type=(i+j)%4;
-   if(rank===0){ // visible diagonal / hypotenuse-like shortcut
-    pts.push([sx+(type%2?3:-3),mid],[sx,bottom]);
-   }else if(rank===1){ // two sides of a narrow rectangle/triangle
-    pts.push([sx+(type%2?1:-1)*w,top+27],[sx+(type%2?1:-1)*w,bottom-27],[sx,bottom]);
-   }else if(rank===2){ // three sides / diamond detour
-    const d=type%2?1:-1;pts.push([sx+d*w,30],[sx-d*w,52],[sx+d*w,72],[sx,bottom]);
-   }else{ // broad polygonal perimeter
-    const d=type%2?1:-1;pts.push([sx+d*w,24],[sx-d*w,39],[sx+d*w,55],[sx-d*w,70],[sx+d*w*.55,80],[sx,bottom]);
-   }
   }
-  pts.forEach(p=>p[0]=Math.max(sx-10.5,Math.min(sx+10.5,p[0])));
   lanes.push({pts,rank});
  }
- return {starts,lanes,winner};
+ return {starts,lanes,winner,geometry:false};
+}
+function geometryStage(i){
+ const type=i%5,rot=Math.floor(i/5)%4;
+ const sets=[
+  // square: diagonal versus two sides, with two larger perimeter routes
+  [
+   [[18,14],[50,50],[50,88]],
+   [[38,14],[38,50],[50,50],[50,88]],
+   [[62,14],[82,14],[82,52],[50,52],[50,88]],
+   [[86,14],[94,30],[72,48],[90,66],[50,88]]
+  ],
+  // rectangle
+  [
+   [[16,12],[50,48],[50,88]],
+   [[38,12],[38,48],[50,48],[50,88]],
+   [[62,12],[82,12],[82,52],[50,52],[50,88]],
+   [[86,12],[94,32],[70,52],[90,70],[50,88]]
+  ],
+  // triangle: hypotenuse-like shortcut vs two legs
+  [
+   [[15,14],[50,58],[50,88]],
+   [[38,14],[38,58],[50,58],[50,88]],
+   [[62,14],[84,36],[62,58],[50,88]],
+   [[86,14],[94,36],[74,58],[88,74],[50,88]]
+  ],
+  // diamond
+  [
+   [[15,12],[50,50],[50,88]],
+   [[38,12],[22,50],[50,88]],
+   [[62,12],[82,50],[50,88]],
+   [[86,12],[94,34],[72,50],[94,68],[50,88]]
+  ],
+  // trapezoid / polygon
+  [
+   [[15,12],[50,54],[50,88]],
+   [[38,12],[26,34],[26,58],[50,88]],
+   [[62,12],[80,30],[80,58],[50,88]],
+   [[86,12],[94,28],[76,44],[92,62],[70,76],[50,88]]
+  ]
+ ];
+ let raw=sets[type].map(p=>p.map(q=>[...q]));
+ // rotate which colour gets each geometric route while keeping the drawing recognisably different.
+ const lanes=Array(4);for(let j=0;j<4;j++)lanes[(j+rot)%4]={pts:raw[j],rank:j};
+ const starts=lanes.map(l=>l.pts[0][0]);
+ return {starts,lanes,winner:rot,geometry:true,shape:type};
 }
 function shuffleStages(){order=Array.from({length:20},(_,i)=>i);for(let i=19;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}}
 function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>ながい みちと みじかい みち</small></button><button data-l="normal">🌼<b>ふつう</b><small>まがりかたも くらべよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>よく みないと まようかも！</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;shuffleStages();show()})}
@@ -43,7 +74,17 @@ function show(){
  const svg=E('svg',{class:'raceworld gravityworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
  svg.append(E('rect',{x:3,y:4,width:94,height:91,rx:4,class:'machineback'}));
  // One common board: crossing ramps are scenery/rails; each ball follows gravity-safe downhill surfaces.
- st.lanes.forEach((l,j)=>{svg.append(E('path',{d:pathD(l.pts),class:'simplechute','data-lane':j}))});
+ if(st.geometry){
+  const guides=[
+   'M18 14 L82 14 L82 58 L18 58 Z M18 14 L82 58 M82 14 L18 58',
+   'M16 12 L84 12 L84 58 L16 58 Z M16 12 L84 58',
+   'M18 14 L50 58 L82 14 Z M18 14 L50 58',
+   'M50 10 L84 50 L50 82 L16 50 Z M50 10 L50 82',
+   'M24 12 L76 12 L88 58 L50 82 L12 58 Z M24 12 L50 82'
+  ];
+  svg.append(E('path',{d:guides[st.shape],class:'geometryguide'}));
+ }
+ st.lanes.forEach((l,j)=>{const p=E('path',{d:pathD(l.pts),class:'simplechute'+(st.geometry?' geometryroute':'')+' route'+j,'data-lane':j});svg.append(p)});
  svg.append(E('rect',{x:5,y:91,width:90,height:3,class:'finishfloor'}));
  const gt=E('text',{x:50,y:89.5,'text-anchor':'middle',class:'gravitygoal'});gt.textContent='ごーる';svg.append(gt);
  const balls=st.starts.map((x,j)=>{const b=E('circle',{cx:x,cy:8,r:2.7,fill:C[j][0],class:'physicsball'});svg.append(b);return b});
