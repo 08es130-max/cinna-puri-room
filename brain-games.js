@@ -49,28 +49,32 @@ function blocks(){
  let heights,ans,scene,grid=null,angle=0;
  const renderIso=()=>{
   const svg=document.querySelector('.isoBlocks');if(!svg||!grid)return;
-  const d=grid.length,w=grid[0].length,rad=angle*Math.PI/180,ca=Math.cos(rad),sa=Math.sin(rad),dx=25,dy=12.5,dz=25;
-  const cubes=[];
+  const d=grid.length,w=grid[0].length,rad=angle*Math.PI/180,ca=Math.cos(rad),sa=Math.sin(rad);
+  const size=42,cz=Math.cos(32*Math.PI/180),sz=Math.sin(32*Math.PI/180);
+  const project=(x,y,z)=>{
+    const px=x-(w/2),py=y-(d/2),rx=px*ca-py*sa,ry=px*sa+py*ca;
+    return [rx*size, (ry*cz-z)*size*0.78];
+  };
+  const faces=[],xs=[],ys=[];
+  const add=(pts,cls,depth)=>{pts.forEach(p=>{xs.push(p[0]);ys.push(p[1])});faces.push({pts,cls,depth})};
   for(let y=0;y<d;y++)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++){
-    const px=x-(w-1)/2,py=y-(d-1)/2;
-    const rx=px*ca-py*sa,ry=px*sa+py*ca;
-    cubes.push({x:rx,y:ry,z});
+    const v={
+      a:project(x,y,z),b:project(x+1,y,z),c:project(x+1,y+1,z),d:project(x,y+1,z),
+      A:project(x,y,z+1),B:project(x+1,y,z+1),C:project(x+1,y+1,z+1),D:project(x,y+1,z+1)
+    };
+    const center=(x-w/2)*sa+(y-d/2)*ca;
+    add([v.A,v.B,v.C,v.D],'ctop',center+z*.001);
+    const nx=-sa,ny=ca;
+    if(nx<0)add([v.a,v.d,v.D,v.A],'cleft',center+.2);
+    else add([v.b,v.c,v.C,v.B],'cright',center+.2);
+    if(ny<0)add([v.a,v.b,v.B,v.A],'cleft',center+.1);
+    else add([v.d,v.c,v.C,v.D],'cright',center+.1);
   }
-  cubes.sort((a,b)=>(a.x+a.y)-(b.x+b.y)||a.z-b.z);
-  const raw=[],xs=[],ys=[];
-  for(const o of cubes){
-    const cx=(o.x-o.y)*dx,cy=(o.x+o.y)*dy-o.z*dz;
-    const pts=[
-      [[cx,cy],[cx+dx,cy+dy],[cx,cy+dy*2],[cx-dx,cy+dy]],
-      [[cx-dx,cy+dy],[cx,cy+dy*2],[cx,cy+dy*2+dz],[cx-dx,cy+dy+dz]],
-      [[cx+dx,cy+dy],[cx,cy+dy*2],[cx,cy+dy*2+dz],[cx+dx,cy+dy+dz]]
-    ];
-    pts.flat().forEach(p=>{xs.push(p[0]);ys.push(p[1])});raw.push(pts);
-  }
-  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),pad=10,ox=-minX+pad,oy=-minY+pad;
+  faces.sort((a,b)=>a.depth-b.depth);
+  const pad=10,minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),ox=-minX+pad,oy=-minY+pad;
   const poly=p=>p.map(q=>(q[0]+ox).toFixed(1)+','+(q[1]+oy).toFixed(1)).join(' ');
   svg.setAttribute('viewBox','0 0 '+(maxX-minX+pad*2)+' '+(maxY-minY+pad*2));
-  svg.innerHTML=raw.map(p=>'<g class="isoCube"><polygon class="ctop" points="'+poly(p[0])+'"/><polygon class="cleft" points="'+poly(p[1])+'"/><polygon class="cright" points="'+poly(p[2])+'"/></g>').join('');
+  svg.innerHTML=faces.map(f=>'<polygon class="'+f.cls+'" points="'+poly(f.pts)+'"/>').join('');
  };
  if(level==='hard'){
   const presets=[[[2,1],[1,2]],[[1,2,1],[2,1,2]],[[3,1],[2,2],[1,1]],[[1,2,1],[2,3,1],[1,1,2]],[[2,2,1],[1,3,2]]];
