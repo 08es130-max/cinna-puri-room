@@ -48,38 +48,40 @@ function detective(){
 function blocks(){
  let heights,ans,scene,grid=null,angle=0;
  const renderIso=()=>{
-  const svg=document.querySelector('.isoBlocks');if(!svg||!grid)return;
-  const d=grid.length,w=grid[0].length,rad=angle*Math.PI/180,ca=Math.cos(rad),sa=Math.sin(rad);
-  const size=42,cz=Math.cos(32*Math.PI/180),sz=Math.sin(32*Math.PI/180);
-  const project=(x,y,z)=>{
-    const px=x-(w/2),py=y-(d/2),rx=px*ca-py*sa,ry=px*sa+py*ca;
-    return [rx*size, (ry*cz-z)*size*0.78];
+  const canvas=document.querySelector('.isoBlocks');if(!canvas||!grid)return;
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const d=grid.length,w=grid[0].length,rad=angle*Math.PI/180,ca=Math.cos(rad),sa=Math.sin(rad),tilt=.58;
+  const proj=(x,y,z)=>{
+    const px=x-w/2,py=y-d/2,rx=px*ca-py*sa,ry=px*sa+py*ca;
+    return {x:rx,y:ry,z,sx:rx,sy:ry*tilt-z,depth:ry};
   };
-  const faces=[],xs=[],ys=[];
-  const add=(pts,cls,depth)=>{pts.forEach(p=>{xs.push(p[0]);ys.push(p[1])});faces.push({pts,cls,depth})};
+  const faces=[];
+  const pushFace=(verts,kind,nx,ny,nz)=>{
+    const rcx=nx*ca-ny*sa,rcy=nx*sa+ny*ca;
+    const viewDot=rcy*tilt+nz;
+    if(viewDot<=0.001)return;
+    const p=verts.map(v=>proj(...v));
+    faces.push({p,kind,depth:p.reduce((s,v)=>s+v.depth,0)/p.length});
+  };
   for(let y=0;y<d;y++)for(let x=0;x<w;x++)for(let z=0;z<grid[y][x];z++){
-    const v={
-      a:project(x,y,z),b:project(x+1,y,z),c:project(x+1,y+1,z),d:project(x,y+1,z),
-      A:project(x,y,z+1),B:project(x+1,y,z+1),C:project(x+1,y+1,z+1),D:project(x,y+1,z+1)
-    };
-    const center=(x-w/2)*sa+(y-d/2)*ca;
-    add([v.A,v.B,v.C,v.D],'ctop',center+z*.001);
-    const nx=-sa,ny=ca;
-    if(nx<0)add([v.a,v.d,v.D,v.A],'cleft',center+.2);
-    else add([v.b,v.c,v.C,v.B],'cright',center+.2);
-    if(ny<0)add([v.a,v.b,v.B,v.A],'cleft',center+.1);
-    else add([v.d,v.c,v.C,v.D],'cright',center+.1);
+    pushFace([[x,y,z+1],[x+1,y,z+1],[x+1,y+1,z+1],[x,y+1,z+1]],'top',0,0,1);
+    if(x===0)pushFace([[x,y,z],[x,y+1,z],[x,y+1,z+1],[x,y,z+1]],'left',-1,0,0);
+    if(x===w-1)pushFace([[x+1,y,z],[x+1,y,z+1],[x+1,y+1,z+1],[x+1,y+1,z]],'right',1,0,0);
+    if(y===0)pushFace([[x,y,z],[x,y,z+1],[x+1,y,z+1],[x+1,y,z]],'left',0,-1,0);
+    if(y===d-1)pushFace([[x,y+1,z],[x+1,y+1,z],[x+1,y+1,z+1],[x,y+1,z+1]],'right',0,1,0);
   }
+  const all=faces.flatMap(f=>f.p),minX=Math.min(...all.map(p=>p.sx)),maxX=Math.max(...all.map(p=>p.sx)),minY=Math.min(...all.map(p=>p.sy)),maxY=Math.max(...all.map(p=>p.sy));
+  const scale=Math.min((W-70)/(maxX-minX||1),(H-60)/(maxY-minY||1)),ox=W/2-(minX+maxX)*scale/2,oy=H/2-(minY+maxY)*scale/2;
   faces.sort((a,b)=>a.depth-b.depth);
-  const pad=10,minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),ox=-minX+pad,oy=-minY+pad;
-  const poly=p=>p.map(q=>(q[0]+ox).toFixed(1)+','+(q[1]+oy).toFixed(1)).join(' ');
-  svg.setAttribute('viewBox','0 0 '+(maxX-minX+pad*2)+' '+(maxY-minY+pad*2));
-  svg.innerHTML=faces.map(f=>'<polygon class="'+f.cls+'" points="'+poly(f.pts)+'"/>').join('');
+  const fill={top:'#a8e3fa',left:'#73c5e8',right:'#55add5'};
+  ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='#368fbd';
+  for(const f of faces){ctx.beginPath();f.p.forEach((p,i)=>{const X=ox+p.sx*scale,Y=oy+p.sy*scale;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.closePath();ctx.fillStyle=fill[f.kind];ctx.fill();ctx.stroke()}
  };
  if(level==='hard'){
   const presets=[[[2,1],[1,2]],[[1,2,1],[2,1,2]],[[3,1],[2,2],[1,1]],[[1,2,1],[2,3,1],[1,1,2]],[[2,2,1],[1,3,2]]];
   grid=pick(presets);ans=grid.flat().reduce((a,b)=>a+b,0);
-  scene='<div class="blockscene block3d"><svg class="isoBlocks" role="img" aria-label="りったいに つまれた つみき"></svg></div><div class="rotateHelp">べつの ほうこうから みてみよう</div><div class="rotateBtns"><button type="button" data-turn="-1">↶ ひだり</button><button type="button" data-turn="1">みぎ ↷</button></div>';
+  scene='<div class="blockscene block3d"><canvas class="isoBlocks" width="640" height="480" role="img" aria-label="りったいに つまれた つみき"></canvas></div><div class="rotateHelp">べつの ほうこうから みてみよう</div><div class="rotateBtns"><button type="button" data-turn="-1">↶ ひだり</button><button type="button" data-turn="1">みぎ ↷</button></div>';
  }else{
   heights=level==='easy'?shuffle([1,1,1,2].slice(0,3+rnd(2))):Array.from({length:4+rnd(2)},()=>1+rnd(3));ans=heights.reduce((a,b)=>a+b,0);
   scene='<div class="blockscene">'+heights.map(h=>'<div class="blockcol">'+Array.from({length:h},()=>'<span>🧊</span>').join('')+'</div>').join('')+'</div>';
