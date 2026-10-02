@@ -82,7 +82,7 @@ function blocks(){
  if(level==='hard'){
   const presets=[[[2,1],[1,2]],[[1,2,1],[2,1,2]],[[3,1],[2,2],[1,1]],[[1,2,1],[2,3,1],[1,1,2]],[[2,2,1],[1,3,2]]];
   grid=pick(presets);ans=grid.flat().reduce((a,b)=>a+b,0);
-  scene='<div class="blockscene block3d"><canvas class="isoBlocks" width="640" height="480" role="img" aria-label="りったいに つまれた つみき"></canvas></div><div class="rotateHelp">べつの ほうこうから みてみよう</div><div class="rotateBtns"><button type="button" data-turn="-1">↶ ひだり</button><button type="button" data-turn="1">みぎ ↷</button></div>';
+  scene='<div class="blockscene block3d"><canvas class="isoBlocks" width="640" height="480" role="img" aria-label="りったいに つまれた つみき"></canvas></div><div class="rotateHelp">👆 ゆびで よこに うごかすと まわせるよ</div>';
  }else{
   heights=level==='easy'?shuffle([1,1,1,2].slice(0,3+rnd(2))):Array.from({length:4+rnd(2)},()=>1+rnd(3));ans=heights.reduce((a,b)=>a+b,0);
   scene='<div class="blockscene">'+heights.map(h=>'<div class="blockcol">'+Array.from({length:h},()=>'<span>🧊</span>').join('')+'</div>').join('')+'</div>';
@@ -91,7 +91,6 @@ function blocks(){
  shell(level==='hard'?'りったい つみき':'つみきは なんこ？','<div class="brainquestion">ぜんぶで なんこ あるかな？</div>'+scene+choices(shuffle([ans,...wrong])));
  if(grid){
   renderIso();
-  document.querySelectorAll('.rotateBtns button').forEach(b=>b.onclick=()=>{angle+=Number(b.dataset.turn)*30;renderIso()});
   const svg=document.querySelector('.isoBlocks');
   let lastX=0,drag=false,pid=null;
   svg.style.touchAction='pan-y';
