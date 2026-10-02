@@ -12,35 +12,41 @@ function easyStage(i){
  return {kind:'easy',paths:extra.map((x,j)=>[[8,16+j*22],[30,16+j*22+(j%2?x*.13:-x*.13)],[58,16+j*22-(j%2?x*.1:-x*.1)],[92,16+j*22]]),obs:[[],[],[],[]]};
 }
 function sharedStage(i,hard){
- const starts=[[14,7],[38,7],[62,7],[86,7]],ends=[[43,94],[48,94],[53,94],[58,94]],paths=[],obs=[];
+ const starts=[[14,7],[38,7],[62,7],[86,7]];
+ const hubA=[28,31],hubB=[72,31],hubC=[50,53],hubD=[30,72],hubE=[70,72],goal=[50,95];
+ const nodes={A:hubA,B:hubB,C:hubC,D:hubD,E:hubE,G:goal};
+ const routeSets=hard?[
+  ['A','C','E','D','G'],
+  ['A','D','C','E','G'],
+  ['B','C','D','E','G'],
+  ['B','E','C','D','G']
+ ]:[
+  ['A','C','D','G'],
+  ['A','D','C','G'],
+  ['B','C','E','G'],
+  ['B','E','C','G']
+ ];
+ const paths=[],obs=[];
  for(let j=0;j<4;j++){
-  const sx=starts[j][0],ex=ends[j][0],dir=j<2?1:-1,phase=(i+j)%4;
-  if(!hard){
-   const x1=Math.max(8,Math.min(92,sx+dir*(10+phase*3)));
-   const x2=Math.max(8,Math.min(92,sx-dir*(7+((i+j)%3)*3)));
-   const x3=Math.max(12,Math.min(88,ex+dir*(9+((i*2+j)%3)*3)));
-   paths.push([[sx,7],[x1,25],[x2,43],[x3,62],[ex+dir*5,80],[ex,94]]);
-   const arr=[];
-   if(phase===0)arr.push({seg:1,t:.5,type:'hill',delay:9});
-   if(phase===1)arr.push({seg:2,t:.5,type:'gate',delay:14});
-   if(phase===2)arr.push({seg:1,t:.5,type:'bridge',delay:10});
-   if(phase===3)arr.push({seg:3,t:.5,type:'spinner',delay:16});
-   obs.push(arr);
-  }else{
-   const zig1=Math.max(7,Math.min(93,sx+dir*(16+phase*3)));
-   const zig2=Math.max(7,Math.min(93,sx-dir*(13+((i+j)%3)*4)));
-   const zig3=Math.max(7,Math.min(93,ex+dir*(20-((i+j)%3)*3)));
-   const zig4=Math.max(7,Math.min(93,ex-dir*(14+((i*3+j)%3)*3)));
-   paths.push([[sx,6],[zig1,18],[zig2,31],[zig1-dir*7,44],[zig3,57],[zig4,69],[ex+dir*13,81],[ex-dir*5,89],[ex,95]]);
-   const arr=[];
-   if(phase===0)arr.push({seg:1,t:.5,type:'hill',delay:10},{seg:4,t:.5,type:'gate',delay:17},{seg:6,t:.5,type:'spinner',delay:18});
-   if(phase===1)arr.push({seg:2,t:.5,type:'bridge',delay:10},{seg:5,t:.5,type:'spinner',delay:18});
-   if(phase===2)arr.push({seg:1,t:.5,type:'spinner',delay:18},{seg:3,t:.5,type:'hill',delay:9},{seg:6,t:.5,type:'gate',delay:17});
-   if(phase===3)arr.push({seg:2,t:.5,type:'gate',delay:17},{seg:4,t:.5,type:'bridge',delay:10},{seg:6,t:.5,type:'hill',delay:9});
-   obs.push(arr);
-  }
+  const seq=routeSets[(j+i)%4],p=[starts[j]];
+  seq.forEach((name,k)=>{
+   const n=nodes[name];
+   if(hard&&k>0&&name!=='G'){
+    const prev=p[p.length-1],side=((i+j+k)%2?1:-1);
+    p.push([Math.max(8,Math.min(92,(prev[0]+n[0])/2+side*(8+((i+k)%3)*2))),Math.max(10,Math.min(90,(prev[1]+n[1])/2))]);
+   }
+   p.push([...n]);
+  });
+  paths.push(p);
+  const arr=[],count=p.length-1;
+  if((i+j)%4===0)arr.push({seg:Math.min(1,count-1),t:.55,type:'hill',delay:10});
+  if((i+j)%4===1)arr.push({seg:Math.min(2,count-1),t:.5,type:'gate',delay:16});
+  if((i+j)%4===2)arr.push({seg:Math.min(1,count-1),t:.5,type:'bridge',delay:10});
+  if((i+j)%4===3)arr.push({seg:Math.min(2,count-1),t:.5,type:'spinner',delay:18});
+  if(hard)arr.push({seg:Math.min(count-2,3+((i+j)%Math.max(1,count-3))),t:.5,type:(i+j)%2?'gate':'spinner',delay:(i+j)%2?16:18});
+  obs.push(arr);
  }
- return {kind:'shared',paths,obs};
+ return {kind:'network',paths,obs,nodes};
 }
 const stages={easy:Array.from({length:20},(_,i)=>easyStage(i)),normal:Array.from({length:20},(_,i)=>sharedStage(i,false)),hard:Array.from({length:20},(_,i)=>sharedStage(i,true))};
 function chooseLevel(){
