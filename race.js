@@ -2,7 +2,7 @@
 const btn=document.querySelector('.minisel[data-mini="race"]'),playMenu=document.getElementById('playMenu'),miniArea=document.getElementById('miniArea'),miniTitle=document.getElementById('miniTitle'),game=document.getElementById('game'),start=document.getElementById('start'),gameMsg=document.getElementById('gameMsg'),miniBack=document.getElementById('miniBack');
 if(!btn||!game)return;
 const C=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55b86a','みどり']],NS='http://www.w3.org/2000/svg';
-let level='easy',stage=0,choice=-1,running=false,raf=0;
+let level='easy',stage=0,choice=-1,running=false,raf=0,order=[];
 function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function stageData(mode,i){
  const starts=[14,38,62,86],winner=(i*3+(mode==='normal'?1:mode==='hard'?2:0))%4,lanes=[];
@@ -10,43 +10,35 @@ function stageData(mode,i){
  for(let j=0;j<4;j++){
   const rank=(j-winner+4)%4,sx=starts[j],pts=[[sx,8]];
   if(mode==='easy'){
-   // Easy: obvious route-length comparison: straight, one detour, two detours, long detour.
-   const amp=[0,4.5,7.5,10.5][rank]+variants*.35;
-   const n=[0,1,2,3][rank];
-   if(n===0) pts.push([sx,88]);
-   else{
-    for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+variants)%2?1:-1;pts.push([sx+dir*amp,y])}
-    pts.push([sx,88]);
-   }
+   const amp=[0,4.5,7.5,10.5][rank]+variants*.35,n=[0,1,2,3][rank];
+   if(n===0)pts.push([sx,88]);else{for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+variants)%2?1:-1;pts.push([sx+dir*amp,y])}pts.push([sx,88])}
   }else if(mode==='normal'){
-   // Normal: all routes bend, but number and size of detours differ.
    const n=[2,3,4,5][rank],amp=[3.5,5,6.5,8][rank]+(variants%3)*.45;
-   for(let k=1;k<=n;k++){
-    const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;
-    const wave=amp*(k%2?1:.72);
-    pts.push([sx+dir*wave,y]);
-   }
-   pts.push([sx,88]);
+   for(let k=1;k<=n;k++){const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;pts.push([sx+dir*amp*(k%2?1:.72),y])}pts.push([sx,88]);
   }else{
-   // Hard: same vertical goal, but different combinations of broad and tight detours.
-   const n=[4,5,6,7][rank],base=[4.8,5.8,6.8,7.8][rank];
-   for(let k=1;k<=n;k++){
-    const y=8+80*k/(n+1),dir=(k+j+variants)%2?1:-1;
-    let amp=base*(1+(((k+variants)%3)-1)*.22);
-    if(rank>1&&k===Math.ceil(n/2)) amp+=2.2;
-    pts.push([sx+dir*amp,y]);
+   // Geometry mode: compare diagonals, sides and polygonal detours.
+   const top=8,bottom=88,mid=48,w=[0,5.5,8,10][rank]+(variants%2);
+   const type=(i+j)%4;
+   if(rank===0){ // visible diagonal / hypotenuse-like shortcut
+    pts.push([sx+(type%2?3:-3),mid],[sx,bottom]);
+   }else if(rank===1){ // two sides of a narrow rectangle/triangle
+    pts.push([sx+(type%2?1:-1)*w,top+27],[sx+(type%2?1:-1)*w,bottom-27],[sx,bottom]);
+   }else if(rank===2){ // three sides / diamond detour
+    const d=type%2?1:-1;pts.push([sx+d*w,30],[sx-d*w,52],[sx+d*w,72],[sx,bottom]);
+   }else{ // broad polygonal perimeter
+    const d=type%2?1:-1;pts.push([sx+d*w,24],[sx-d*w,39],[sx+d*w,55],[sx-d*w,70],[sx+d*w*.55,80],[sx,bottom]);
    }
-   pts.push([sx,88]);
   }
   pts.forEach(p=>p[0]=Math.max(sx-10.5,Math.min(sx+10.5,p[0])));
   lanes.push({pts,rank});
  }
  return {starts,lanes,winner};
 }
-function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>ながい みちと みじかい みち</small></button><button data-l="normal">🌼<b>ふつう</b><small>まがりかたも くらべよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>よく みないと まようかも！</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;show()})}
+function shuffleStages(){order=Array.from({length:20},(_,i)=>i);for(let i=19;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}}
+function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>ながい みちと みじかい みち</small></button><button data-l="normal">🌼<b>ふつう</b><small>まがりかたも くらべよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>よく みないと まようかも！</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;shuffleStages();show()})}
 function pathD(p){return p.map((q,k)=>(k?'L':'M')+q[0]+' '+q[1]).join(' ')}
 function show(){
- cancelAnimationFrame(raf);running=false;choice=-1;const st=stageData(level,stage);game.innerHTML='';
+ cancelAnimationFrame(raf);running=false;choice=-1;if(!order.length)shuffleStages();const st=stageData(level,order[stage]);game.innerHTML='';
  const box=document.createElement('div');box.className='racebox gravityrace';box.innerHTML='<div class="racehead">'+({easy:'かんたん',normal:'ふつう',hard:'むずかしい'}[level])+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが さいしょに したまで いくかな？</div>';
  const svg=E('svg',{class:'raceworld gravityworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
  svg.append(E('rect',{x:3,y:4,width:94,height:91,rx:4,class:'machineback'}));
