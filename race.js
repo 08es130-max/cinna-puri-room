@@ -12,26 +12,31 @@ function easyStage(i){
  return {kind:'easy',paths:extra.map((x,j)=>[[8,16+j*22],[30,16+j*22+(j%2?x*.13:-x*.13)],[58,16+j*22-(j%2?x*.1:-x*.1)],[92,16+j*22]]),obs:[[],[],[],[]]};
 }
 function sharedStage(i,hard){
- const starts=[[7,13],[7,35],[7,65],[7,87]],mergeX=hard?58:50,gy=50;
- const paths=[],obs=[];
+ const starts=[[7,12],[7,34],[7,66],[7,88]],paths=[],obs=[];
  for(let j=0;j<4;j++){
-  const bend=((i*11+j*17)%23)-11;
-  const midY=Math.max(9,Math.min(91,starts[j][1]+bend));
-  const pre=hard?[[7,starts[j][1]],[24,midY],[40,starts[j][1]+(j<2?12:-12)],[mergeX,gy]]:[[7,starts[j][1]],[28,midY],[mergeX,gy]];
-  paths.push([...pre,[74,gy+(i%2?8:-8)],[94,50]]);
-  const arr=[];
-  const n=(i+j)%4;
+  const sy=starts[j][1],flip=(i+j)%2?1:-1;
   if(!hard){
-   if(n===0)arr.push({seg:1,t:.55,type:'hill',delay:8});
-   if(n===1)arr.push({seg:1,t:.48,type:'gate',delay:14});
-   if(n===2)arr.push({seg:1,t:.5,type:'bridge',delay:10});
+   const y1=Math.max(10,Math.min(90,sy+flip*(7+(i%4)*2)));
+   paths.push([[7,sy],[25,y1],[43,sy],[57,50],[75,50+(i%2?7:-7)],[94,50]]);
+   const n=(i+j)%4,arr=[];
+   if(n===0)arr.push({seg:1,t:.52,type:'hill',delay:8});
+   if(n===1)arr.push({seg:2,t:.52,type:'gate',delay:14});
+   if(n===2)arr.push({seg:1,t:.48,type:'bridge',delay:10});
+   obs.push(arr);
   }else{
-   if(n===0)arr.push({seg:1,t:.45,type:'hill',delay:10},{seg:2,t:.55,type:'gate',delay:16});
-   if(n===1)arr.push({seg:1,t:.52,type:'spinner',delay:18});
-   if(n===2)arr.push({seg:1,t:.4,type:'bridge',delay:10},{seg:2,t:.5,type:'hill',delay:9});
-   if(n===3)arr.push({seg:2,t:.48,type:'gate',delay:16});
+   const upper=j<2,side=upper?-1:1;
+   const y1=Math.max(8,Math.min(92,sy+side*(13+(i%3)*3)));
+   const y2=Math.max(8,Math.min(92,50+side*(27-((i+j)%3)*4)));
+   const y3=Math.max(10,Math.min(90,50-side*(15+((i*3+j)%4)*3)));
+   const y4=50+side*(8+(i%3)*2);
+   paths.push([[6,sy],[18,y1],[30,y2],[42,y3],[54,y2],[64,50],[73,y4],[82,50-side*7],[94,50]]);
+   const n=(i+j)%4,arr=[];
+   if(n===0)arr.push({seg:1,t:.52,type:'hill',delay:10},{seg:3,t:.5,type:'gate',delay:16},{seg:6,t:.5,type:'spinner',delay:17});
+   if(n===1)arr.push({seg:2,t:.48,type:'bridge',delay:10},{seg:4,t:.52,type:'spinner',delay:18});
+   if(n===2)arr.push({seg:1,t:.5,type:'spinner',delay:18},{seg:3,t:.48,type:'hill',delay:9},{seg:6,t:.5,type:'gate',delay:16});
+   if(n===3)arr.push({seg:2,t:.5,type:'gate',delay:16},{seg:4,t:.5,type:'bridge',delay:10});
+   obs.push(arr);
   }
-  obs.push(arr);
  }
  return {kind:'shared',paths,obs};
 }
@@ -71,6 +76,8 @@ function showStage(){
  const defs=svgEl('defs');const pat=svgEl('pattern',{id:'finishCheck',width:4,height:4,patternUnits:'userSpaceOnUse'});pat.append(svgEl('rect',{width:2,height:2,fill:'#333'}),svgEl('rect',{x:2,y:2,width:2,height:2,fill:'#333'}));defs.append(pat);svg.append(defs);
  if(s.kind==='shared'){svg.append(svgEl('rect',{x:92,y:43,width:5,height:14,fill:'url(#finishCheck)',class:'sharedfinish'}))}
  const mets=s.paths.map((p,j)=>{
+  const shadow=svgEl('path',{d:pathD(p),class:'trackshadow'});svg.append(shadow);
+  const rail=svgEl('path',{d:pathD(p),class:'trackrail'});svg.append(rail);
   const path=svgEl('path',{d:pathD(p),class:'realtrack','data-i':j});svg.append(path);
   if(s.kind==='easy'){const z=p[p.length-1];svg.append(svgEl('rect',{x:z[0]-1,y:z[1]-5,width:4,height:10,fill:'url(#finishCheck)'}))}
   s.obs[j].forEach(o=>{const q=obstaclePoint(p,o);svg.append(obstacleGroup(o.type,q.x,q.y))});
@@ -93,7 +100,7 @@ function runRace(s,mets,box,svg){
    const gravity=Math.sin(rad)*0.000018;st.v=Math.max(.012,Math.min(.052,st.v+gravity*dt));st.v*=Math.pow(.9996,dt);st.d+=st.v*dt;
    s.obs[j].forEach((o,k)=>{const key=j+'-'+k;if(st.hit.has(key))return;const op=obstaclePoint(s.paths[j],o),oq=pointOn(s.paths[j],mets[j],st.d);if(Math.hypot(op.x-oq.x,op.y-oq.y)<4){st.hit.add(key);st.wait=o.delay*22;if(o.type==='hill')st.v*=.55;if(o.type==='bridge')st.v*=.72;if(o.type==='gate')st.v*=.35;if(o.type==='spinner')st.v*=.3}});
    if(st.d>=mets[j].total){st.d=mets[j].total;st.done=true;st.time=elapsed;finish.push(j)}
-   const pos=pointOn(s.paths[j],mets[j],st.d);balls[j].setAttribute('cx',pos.x);balls[j].setAttribute('cy',pos.y);balls[j].style.transform='rotate('+(st.d*18)+'deg)';balls[j].style.transformOrigin=pos.x+'px '+pos.y+'px';
+   const pos=pointOn(s.paths[j],mets[j],st.d);balls[j].setAttribute('cx',Math.max(3,Math.min(97,pos.x)));balls[j].setAttribute('cy',Math.max(3,Math.min(97,pos.y)));
   });
   if(states.every(x=>x.done)){running=false;finishRace(finish[0],box);return}raf=requestAnimationFrame(tick);
  }
