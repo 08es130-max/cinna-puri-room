@@ -12,29 +12,31 @@ function easyStage(i){
  return {kind:'easy',paths:extra.map((x,j)=>[[8,16+j*22],[30,16+j*22+(j%2?x*.13:-x*.13)],[58,16+j*22-(j%2?x*.1:-x*.1)],[92,16+j*22]]),obs:[[],[],[],[]]};
 }
 function sharedStage(i,hard){
- const starts=[[7,12],[7,34],[7,66],[7,88]],paths=[],obs=[];
+ const starts=[[14,7],[38,7],[62,7],[86,7]],ends=[[43,94],[48,94],[53,94],[58,94]],paths=[],obs=[];
  for(let j=0;j<4;j++){
-  const sy=starts[j][1],flip=(i+j)%2?1:-1;
+  const sx=starts[j][0],ex=ends[j][0],dir=j<2?1:-1,phase=(i+j)%4;
   if(!hard){
-   const y1=Math.max(10,Math.min(90,sy+flip*(7+(i%4)*2)));
-   paths.push([[7,sy],[25,y1],[43,sy],[57,50],[75,50+(i%2?7:-7)],[94,50]]);
-   const n=(i+j)%4,arr=[];
-   if(n===0)arr.push({seg:1,t:.52,type:'hill',delay:8});
-   if(n===1)arr.push({seg:2,t:.52,type:'gate',delay:14});
-   if(n===2)arr.push({seg:1,t:.48,type:'bridge',delay:10});
+   const x1=Math.max(8,Math.min(92,sx+dir*(10+phase*3)));
+   const x2=Math.max(8,Math.min(92,sx-dir*(7+((i+j)%3)*3)));
+   const x3=Math.max(12,Math.min(88,ex+dir*(9+((i*2+j)%3)*3)));
+   paths.push([[sx,7],[x1,25],[x2,43],[x3,62],[ex+dir*5,80],[ex,94]]);
+   const arr=[];
+   if(phase===0)arr.push({seg:1,t:.5,type:'hill',delay:9});
+   if(phase===1)arr.push({seg:2,t:.5,type:'gate',delay:14});
+   if(phase===2)arr.push({seg:1,t:.5,type:'bridge',delay:10});
+   if(phase===3)arr.push({seg:3,t:.5,type:'spinner',delay:16});
    obs.push(arr);
   }else{
-   const upper=j<2,side=upper?-1:1;
-   const y1=Math.max(8,Math.min(92,sy+side*(13+(i%3)*3)));
-   const y2=Math.max(8,Math.min(92,50+side*(27-((i+j)%3)*4)));
-   const y3=Math.max(10,Math.min(90,50-side*(15+((i*3+j)%4)*3)));
-   const y4=50+side*(8+(i%3)*2);
-   paths.push([[6,sy],[18,y1],[30,y2],[42,y3],[54,y2],[64,50],[73,y4],[82,50-side*7],[94,50]]);
-   const n=(i+j)%4,arr=[];
-   if(n===0)arr.push({seg:1,t:.52,type:'hill',delay:10},{seg:3,t:.5,type:'gate',delay:16},{seg:6,t:.5,type:'spinner',delay:17});
-   if(n===1)arr.push({seg:2,t:.48,type:'bridge',delay:10},{seg:4,t:.52,type:'spinner',delay:18});
-   if(n===2)arr.push({seg:1,t:.5,type:'spinner',delay:18},{seg:3,t:.48,type:'hill',delay:9},{seg:6,t:.5,type:'gate',delay:16});
-   if(n===3)arr.push({seg:2,t:.5,type:'gate',delay:16},{seg:4,t:.5,type:'bridge',delay:10});
+   const zig1=Math.max(7,Math.min(93,sx+dir*(16+phase*3)));
+   const zig2=Math.max(7,Math.min(93,sx-dir*(13+((i+j)%3)*4)));
+   const zig3=Math.max(7,Math.min(93,ex+dir*(20-((i+j)%3)*3)));
+   const zig4=Math.max(7,Math.min(93,ex-dir*(14+((i*3+j)%3)*3)));
+   paths.push([[sx,6],[zig1,18],[zig2,31],[zig1-dir*7,44],[zig3,57],[zig4,69],[ex+dir*13,81],[ex-dir*5,89],[ex,95]]);
+   const arr=[];
+   if(phase===0)arr.push({seg:1,t:.5,type:'hill',delay:10},{seg:4,t:.5,type:'gate',delay:17},{seg:6,t:.5,type:'spinner',delay:18});
+   if(phase===1)arr.push({seg:2,t:.5,type:'bridge',delay:10},{seg:5,t:.5,type:'spinner',delay:18});
+   if(phase===2)arr.push({seg:1,t:.5,type:'spinner',delay:18},{seg:3,t:.5,type:'hill',delay:9},{seg:6,t:.5,type:'gate',delay:17});
+   if(phase===3)arr.push({seg:2,t:.5,type:'gate',delay:17},{seg:4,t:.5,type:'bridge',delay:10},{seg:6,t:.5,type:'hill',delay:9});
    obs.push(arr);
   }
  }
@@ -77,7 +79,10 @@ function showStage(){
  floor.append(svgEl('ellipse',{cx:52,cy:94,rx:42,ry:3.2,class:'floorShadow'}));
  svg.append(floor);
  const defs=svgEl('defs');const pat=svgEl('pattern',{id:'finishCheck',width:4,height:4,patternUnits:'userSpaceOnUse'});pat.append(svgEl('rect',{width:2,height:2,fill:'#333'}),svgEl('rect',{x:2,y:2,width:2,height:2,fill:'#333'}));defs.append(pat);svg.append(defs);
- if(s.kind==='shared'){svg.append(svgEl('rect',{x:92,y:43,width:5,height:14,fill:'url(#finishCheck)',class:'sharedfinish'}))}
+ if(s.kind==='shared'){
+  svg.append(svgEl('rect',{x:39,y:92,width:23,height:5,fill:'url(#finishCheck)',class:'sharedfinish'}));
+  const gt=svgEl('text',{x:50,y:90,'text-anchor':'middle',class:'goaltext'});gt.textContent='ごーる';svg.append(gt);
+ }
  const mets=s.paths.map((p,j)=>{
   const shadow=svgEl('path',{d:pathD(p),class:'trackshadow'});svg.append(shadow);
   const side=svgEl('path',{d:pathD(p),class:'trackside'});svg.append(side);
@@ -107,10 +112,6 @@ function runRace(s,mets,box,svg){
    if(st.d>=mets[j].total){st.d=mets[j].total;st.done=true;st.time=elapsed;finish.push(j)}
    const pos=pointOn(s.paths[j],mets[j],st.d);
    let px=pos.x,py=pos.y;
-   if(s.kind==='shared'&&pos.seg>=s.paths[j].length-4){
-    const lane=(j-1.5)*1.55,ang=pos.angle*Math.PI/180;
-    px+=-Math.sin(ang)*lane;py+=Math.cos(ang)*lane;
-   }
    balls[j].setAttribute('cx',Math.max(3,Math.min(97,px)));balls[j].setAttribute('cy',Math.max(3,Math.min(97,py)));
   });
   if(states.every(x=>x.done)){running=false;finishRace(finish[0],box);return}raf=requestAnimationFrame(tick);
