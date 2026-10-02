@@ -5,23 +5,38 @@ const C=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55
 let level='easy',stage=0,choice=-1,running=false,raf=0;
 function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
 function stageData(mode,i){
- const hard=mode==='hard',normal=mode==='normal';
- const starts=[15,38,62,85],base=(i%4);
- const lanes=[];
+ const starts=[14,38,62,86],winner=i%4,lanes=[];
+ // Four deliberately different independent chutes. The winning chute is visibly the shortest.
+ const shapes={
+  easy:[
+   [[0,0],[0,24],[0,48],[0,72],[0,84]],
+   [[0,0],[12,22],[-10,44],[10,66],[0,84]],
+   [[0,0],[-17,18],[15,37],[-16,57],[13,75],[0,84]],
+   [[0,0],[20,15],[-18,30],[20,45],[-18,60],[18,74],[0,84]]
+  ],
+  normal:[
+   [[0,0],[5,20],[-4,41],[5,62],[0,84]],
+   [[0,0],[15,18],[-13,38],[14,58],[-8,76],[0,84]],
+   [[0,0],[-19,16],[17,33],[-17,51],[16,68],[-8,79],[0,84]],
+   [[0,0],[21,14],[-19,29],[20,44],[-19,59],[18,73],[0,84]]
+  ],
+  hard:[
+   [[0,0],[8,17],[-7,35],[8,53],[-6,70],[0,84]],
+   [[0,0],[16,15],[-14,31],[15,48],[-13,65],[8,78],[0,84]],
+   [[0,0],[-20,13],[18,27],[-19,42],[18,57],[-16,71],[8,80],[0,84]],
+   [[0,0],[22,12],[-20,25],[21,38],[-20,51],[20,64],[-18,76],[0,84]]
+  ]
+ };
+ const set=shapes[mode];
  for(let j=0;j<4;j++){
-  const rank=(j-base+4)%4, sx=starts[j], drift=(j<2?1:-1);
-  const pts=[[sx,8]];
-  if(!normal&&!hard){
-   pts.push([sx+drift*(8+rank*2),28],[sx-drift*(4+rank*2),51],[sx+drift*(5+rank),72],[46+j*3,92]);
-  }else if(normal){
-   pts.push([sx+drift*(12+rank*2),24],[sx-drift*(8+rank*2),42],[sx+drift*(10+rank),61],[sx-drift*(6+rank),78],[46+j*3,92]);
-  }else{
-   pts.push([sx+drift*(13+rank*2),20],[sx-drift*(10+rank*2),35],[sx+drift*(12+rank),50],[sx-drift*(10+rank),64],[sx+drift*(8+rank),77],[46+j*3,92]);
-  }
-  pts.forEach(p=>{p[0]=Math.max(7,Math.min(93,p[0]))});
-  lanes.push({pts,slow:rank,boost:3-rank});
+  const difficulty=(j-winner+4)%4,raw=set[difficulty],sx=starts[j];
+  const ex=46+j*3, pts=raw.map((p,k)=>{
+   const t=k/(raw.length-1),center=sx*(1-t)+ex*t;
+   return [Math.max(7,Math.min(93,center+p[0]*(1-t*.35))),8+p[1]];
+  });
+  lanes.push({pts,rank:difficulty});
  }
- return {starts,lanes};
+ return {starts,lanes,winner};
 }
 function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>みちの ながさを くらべよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>さかの かたちも みよう</small></button><button data-l="hard">🔥<b>むずかしい</b><small>まがりみちが ふえるよ</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;show()})}
 function pathD(p){return p.map((q,k)=>(k?'L':'M')+q[0]+' '+q[1]).join(' ')}
@@ -46,9 +61,9 @@ function run(st,els,box){
  if(running||choice<0)return;running=true;box.querySelector('.racego').disabled=true;box.querySelectorAll('.racepicks button').forEach(x=>x.disabled=true);
  const ms=st.lanes.map(l=>lengths(l.pts));
  // deterministic: shorter/steeper visible route is faster; no bounce, randomness, or stopping.
- const state=ms.map((m,j)=>({d:0,v:.055+st.lanes[j].boost*.003,done:false})),finish=[];let last=performance.now();
+ const state=ms.map((m,j)=>({d:0,v:.064,done:false})),finish=[];let last=performance.now();
  function tick(now){const dt=Math.min(30,now-last);last=now;
-  state.forEach((s,j)=>{if(s.done)return;const m=ms[j],l=st.lanes[j];s.v=Math.min(.095,s.v+.000012*dt);s.d+=s.v*dt;if(s.d>=m.total){s.d=m.total;s.done=true;finish.push(j)}const q=point(l.pts,m,s.d);els[j].setAttribute('cx',q.x);els[j].setAttribute('cy',q.y)});
+  state.forEach((s,j)=>{if(s.done)return;const m=ms[j],l=st.lanes[j];s.v=Math.min(.086,s.v+.000008*dt);s.d+=s.v*dt;if(s.d>=m.total){s.d=m.total;s.done=true;finish.push(j)}const q=point(l.pts,m,s.d);els[j].setAttribute('cx',q.x);els[j].setAttribute('cy',q.y)});
   if(state.every(s=>s.done)){running=false;result(finish[0],box);return}raf=requestAnimationFrame(tick)
  }raf=requestAnimationFrame(tick)
 }
