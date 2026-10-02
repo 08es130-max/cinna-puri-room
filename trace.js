@@ -35,27 +35,44 @@ let word='',wordIndex=0,wordDrawings=[],wordCategory='greeting';
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const charType=ch=>/^[ぁ-ゖゝゞ]$/.test(ch)?'hira':(/^[ァ-ヺヽヾ]$/.test(ch)?'kata':'special');
-const sourceUrl=(m,ch)=>'https://raw.githubusercontent.com/zhengkyl/strokesvg/main/dist/'+(m==='hira'?'hiragana':'katakana')+'/'+encodeURIComponent(ch)+'.svg';
-
-async function getKanaSvg(m,ch){
- const url=sourceUrl(m,ch),cacheName='nakayoshi-kana-strokes-v1';
+const sourceUrls=(m,ch)=>{
+ const dir=m==='hira'?'hiragana':'katakana',f=encodeURIComponent(ch)+'.svg';
+ return [
+  'https://cdn.jsdelivr.net/gh/zhengkyl/strokesvg@main/dist/'+dir+'/'+f,
+  'https://raw.githubusercontent.com/zhengkyl/strokesvg/main/dist/'+dir+'/'+f
+ ];
+};
+async function fetchTextReliable(urls,cacheName,key){
  try{
   if('caches'in window){
-   const c=await caches.open(cacheName),hit=await c.match(url);
-   if(hit)return await hit.text();
-   const res=await fetch(url,{cache:'force-cache'});if(!res.ok)throw 0;await c.put(url,res.clone());return await res.text();
+   const cc=await caches.open(cacheName),hit=await cc.match(key);
+   if(hit){const t=await hit.text();if(t)return t}
+   for(const url of urls){
+    for(let attempt=0;attempt<2;attempt++){
+     try{
+      const res=await fetch(url,{cache:attempt?'reload':'force-cache'});
+      if(res.ok){const txt=await res.text();if(txt){await cc.put(key,new Response(txt,{headers:{'Content-Type':'image/svg+xml'}}));return txt}}
+     }catch(e){}
+     await sleep(120);
+    }
+   }
+   return '';
   }
-  const res=await fetch(url);if(!res.ok)throw 0;return await res.text();
- }catch(e){return ''}
+  for(const url of urls){try{const res=await fetch(url,{cache:'no-cache'});if(res.ok)return await res.text()}catch(e){}}
+ }catch(e){}
+ return '';
+}
+async function getKanaSvg(m,ch){
+ const urls=sourceUrls(m,ch),key=new Request(location.origin+'/__kana_guide__/'+m+'/'+encodeURIComponent(ch)+'.svg');
+ return await fetchTextReliable(urls,'nakayoshi-kana-strokes-v2',key);
 }
 function prefetchKana(){
  if(!('caches'in window))return;
- caches.open('nakayoshi-kana-strokes-v1').then(async c=>{
-  for(const m of ['hira','kata'])for(const ch of kana[m]){
-   const u=sourceUrl(m,ch);if(await c.match(u))continue;
-   fetch(u,{cache:'force-cache'}).then(r=>{if(r.ok)c.put(u,r.clone())}).catch(()=>{});
-  }
- }).catch(()=>{});
+ const jobs=[];
+ for(const m of ['hira','kata'])for(const ch of kana[m])jobs.push(()=>getKanaSvg(m,ch));
+ let i=0,running=0;
+ const pump=()=>{while(running<3&&i<jobs.length){running++;jobs[i++]().catch(()=>{}).finally(()=>{running--;pump()})}};
+ pump();
 }
 function clearInk(){if(inkCtx)inkCtx.clearRect(0,0,800,800);last=null}
 function stopDemo(){demoToken++}
