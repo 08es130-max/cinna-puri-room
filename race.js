@@ -1,133 +1,65 @@
 (()=>{
-const btn=document.querySelector('.minisel[data-mini="race"]');
-const playMenu=document.getElementById('playMenu'),miniArea=document.getElementById('miniArea'),miniTitle=document.getElementById('miniTitle'),game=document.getElementById('game'),start=document.getElementById('start'),gameMsg=document.getElementById('gameMsg'),miniBack=document.getElementById('miniBack');
-if(!btn||!playMenu||!miniArea||!game)return;
-const B=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55b86a','みどり']],NS='http://www.w3.org/2000/svg';
+const btn=document.querySelector('.minisel[data-mini="race"]'),playMenu=document.getElementById('playMenu'),miniArea=document.getElementById('miniArea'),miniTitle=document.getElementById('miniTitle'),game=document.getElementById('game'),start=document.getElementById('start'),gameMsg=document.getElementById('gameMsg'),miniBack=document.getElementById('miniBack');
+if(!btn||!game)return;
+const C=[['#ed5555','あか'],['#4c9fe5','あお'],['#efc932','きいろ'],['#55b86a','みどり']],NS='http://www.w3.org/2000/svg';
 let level='easy',stage=0,choice=-1,running=false,raf=0;
-const labels={easy:'かんたん',normal:'ふつう',hard:'むずかしい'};
-function svgEl(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
-function easyStage(i){
- const win=i%4,extra=[0,0,0,0].map((_,j)=>18+((j-win+4)%4)*17+((i*5+j*7)%9));
- extra[win]=4+(i%5)*2;
- return {kind:'easy',paths:extra.map((x,j)=>[[8,16+j*22],[30,16+j*22+(j%2?x*.13:-x*.13)],[58,16+j*22-(j%2?x*.1:-x*.1)],[92,16+j*22]]),obs:[[],[],[],[]]};
-}
-function sharedStage(i,hard){
- const starts=[[14,7],[38,7],[62,7],[86,7]];
- const hubA=[28,31],hubB=[72,31],hubC=[50,53],hubD=[30,72],hubE=[70,72],goal=[50,95];
- const nodes={A:hubA,B:hubB,C:hubC,D:hubD,E:hubE,G:goal};
- const routeSets=hard?[
-  ['A','C','E','D','G'],
-  ['A','D','C','E','G'],
-  ['B','C','D','E','G'],
-  ['B','E','C','D','G']
- ]:[
-  ['A','C','D','G'],
-  ['A','D','C','G'],
-  ['B','C','E','G'],
-  ['B','E','C','G']
- ];
- const paths=[],obs=[];
- for(let j=0;j<4;j++){
-  const seq=routeSets[(j+i)%4],p=[starts[j]];
-  seq.forEach((name,k)=>{
-   const n=nodes[name];
-   if(hard&&k>0&&name!=='G'){
-    const prev=p[p.length-1],side=((i+j+k)%2?1:-1);
-    p.push([Math.max(8,Math.min(92,(prev[0]+n[0])/2+side*(8+((i+k)%3)*2))),Math.max(10,Math.min(90,(prev[1]+n[1])/2))]);
-   }
-   p.push([...n]);
-  });
-  paths.push(p);
-  const arr=[],count=p.length-1;
-  if((i+j)%4===0)arr.push({seg:Math.min(1,count-1),t:.55,type:'hill',delay:10});
-  if((i+j)%4===1)arr.push({seg:Math.min(2,count-1),t:.5,type:'gate',delay:16});
-  if((i+j)%4===2)arr.push({seg:Math.min(1,count-1),t:.5,type:'bridge',delay:10});
-  if((i+j)%4===3)arr.push({seg:Math.min(2,count-1),t:.5,type:'spinner',delay:18});
-  if(hard)arr.push({seg:Math.min(count-2,3+((i+j)%Math.max(1,count-3))),t:.5,type:(i+j)%2?'gate':'spinner',delay:(i+j)%2?16:18});
-  obs.push(arr);
+const S={easy:[18,38,62,82],normal:[14,36,64,86],hard:[12,34,66,88]};
+function E(n,a={}){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
+function seeded(n){let x=(n+1)*9301+49297;return()=>((x=(x*9301+49297)%233280)/233280)}
+function makeStage(mode,i){
+ const rnd=seeded(i+(mode==='normal'?100:mode==='hard'?200:0)),hard=mode==='hard',normal=mode==='normal';
+ const segs=[],pegs=[],spins=[];
+ const rows=hard?7:normal?6:5;
+ for(let r=0;r<rows;r++){
+  const y=17+r*(hard?10.3:normal?11.8:13.4);
+  const count=hard?3:normal?2+(r%2):2;
+  for(let k=0;k<count;k++){
+   const cx=12+(k+.5)*(76/count)+(rnd()-.5)*10;
+   const len=hard?18+rnd()*12:normal?22+rnd()*15:27+rnd()*15;
+   const tilt=(rnd()>.5?1:-1)*(hard?10+rnd()*18:8+rnd()*14);
+   const dx=Math.cos(tilt*Math.PI/180)*len/2,dy=Math.sin(tilt*Math.PI/180)*len/2;
+   segs.push({x1:cx-dx,y1:y-dy,x2:cx+dx,y2:y+dy});
+  }
  }
- return {kind:'network',paths,obs,nodes};
+ const pc=hard?12:normal?8:4;
+ for(let p=0;p<pc;p++)pegs.push({x:10+rnd()*80,y:22+rnd()*62,r:hard?2.2:2.6});
+ const sc=hard?4:normal?2:0;
+ for(let p=0;p<sc;p++)spins.push({x:18+rnd()*64,y:28+rnd()*50,len:hard?11:13,a:rnd()*Math.PI});
+ return {starts:S[mode],segs,pegs,spins};
 }
-const stages={easy:Array.from({length:20},(_,i)=>easyStage(i)),normal:Array.from({length:20},(_,i)=>sharedStage(i,false)),hard:Array.from({length:20},(_,i)=>sharedStage(i,true))};
-function chooseLevel(){
- cancelAnimationFrame(raf);running=false;
- game.innerHTML='<div class="racelevels"><div class="racehead">どの こーすに する？</div><button data-l="easy">🌱<b>かんたん</b><small>4つの みちの ながさを くらべよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>べつの みちから おなじ ごーるへ</small></button><button data-l="hard">🔥<b>むずかしい</b><small>さかや しかけも よく みよう</small></button></div>';
- game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;showStage()});
-}
-function pathD(p){return p.map((q,k)=>(k?'L':'M')+' '+q[0]+' '+q[1]).join(' ')}
-function obstacleGroup(type,x,y){
- const g=svgEl('g',{class:'racefixture '+type,transform:'translate('+x+' '+y+')'});
- if(type==='hill'){g.append(svgEl('path',{d:'M -5 3 Q 0 -6 5 3',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-6,'text-anchor':'middle'});t.textContent='さか';g.append(t)}
- if(type==='gate'){g.append(svgEl('path',{d:'M -4 4 L -4 -5 L 4 -5 L 4 4',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-7,'text-anchor':'middle'});t.textContent='げーと';g.append(t)}
- if(type==='bridge'){g.append(svgEl('path',{d:'M -6 3 Q 0 -5 6 3 M -6 3 L 6 3',class:'fixture-shape'}));const t=svgEl('text',{x:0,y:-6,'text-anchor':'middle'});t.textContent='はし';g.append(t)}
- if(type==='spinner'){g.append(svgEl('circle',{r:4,class:'fixture-shape'}));g.append(svgEl('path',{d:'M -6 0 L 6 0 M 0 -6 L 0 6',class:'fixture-shape spin'}));const t=svgEl('text',{x:0,y:-8,'text-anchor':'middle'});t.textContent='くるくる';g.append(t)}
- return g;
-}
-function metrics(p,obs){
- let total=0;const seg=[];
- for(let i=0;i<p.length-1;i++){const dx=p[i+1][0]-p[i][0],dy=p[i+1][1]-p[i][1],l=Math.hypot(dx,dy);seg.push({l,dx,dy});total+=l}
- let cost=total;
- for(const s of seg){const slope=s.dy/s.l;cost+=Math.max(-.25,Math.min(.35,-slope*.28))*s.l}
- cost+=obs.reduce((n,o)=>n+o.delay,0);
- return {total,seg,cost};
-}
-function pointOn(p,m,d){
- let left=d;
- for(let i=0;i<m.seg.length;i++){const s=m.seg[i];if(left<=s.l){const t=left/s.l;return{x:p[i][0]+s.dx*t,y:p[i][1]+s.dy*t,angle:Math.atan2(s.dy,s.dx)*180/Math.PI,seg:i,t}}left-=s.l}
- const a=p[p.length-2],z=p[p.length-1];return{x:z[0],y:z[1],angle:Math.atan2(z[1]-a[1],z[0]-a[0])*180/Math.PI,seg:m.seg.length-1,t:1}
-}
-function obstaclePoint(p,o){const a=p[o.seg],b=p[o.seg+1];return{x:a[0]+(b[0]-a[0])*o.t,y:a[1]+(b[1]-a[1])*o.t}}
-function showStage(){
- cancelAnimationFrame(raf);running=false;choice=-1;const s=stages[level][stage];game.innerHTML='';
- const box=document.createElement('div');box.className='racebox';box.innerHTML='<div class="racehead">'+labels[level]+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが いちばん はやいかな？</div>';
- const svg=svgEl('svg',{class:'raceworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
- const floor=svgEl('g',{class:'racefloor'});
- floor.append(svgEl('ellipse',{cx:52,cy:94,rx:42,ry:3.2,class:'floorShadow'}));
- svg.append(floor);
- const defs=svgEl('defs');const pat=svgEl('pattern',{id:'finishCheck',width:4,height:4,patternUnits:'userSpaceOnUse'});pat.append(svgEl('rect',{width:2,height:2,fill:'#333'}),svgEl('rect',{x:2,y:2,width:2,height:2,fill:'#333'}));defs.append(pat);svg.append(defs);
- if(s.kind==='shared'){
-  svg.append(svgEl('rect',{x:39,y:92,width:23,height:5,fill:'url(#finishCheck)',class:'sharedfinish'}));
-  const gt=svgEl('text',{x:50,y:90,'text-anchor':'middle',class:'goaltext'});gt.textContent='ごーる';svg.append(gt);
- }
- const mets=s.paths.map((p,j)=>{
-  const shadow=svgEl('path',{d:pathD(p),class:'trackshadow'});svg.append(shadow);
-  const side=svgEl('path',{d:pathD(p),class:'trackside'});svg.append(side);
-  const rail=svgEl('path',{d:pathD(p),class:'trackrail'});svg.append(rail);
-  const path=svgEl('path',{d:pathD(p),class:'realtrack','data-i':j});svg.append(path);
-  const shine=svgEl('path',{d:pathD(p),class:'trackshine'});svg.append(shine);
-  if(s.kind==='easy'){const z=p[p.length-1];svg.append(svgEl('rect',{x:z[0]-1,y:z[1]-5,width:4,height:10,fill:'url(#finishCheck)'}))}
-  s.obs[j].forEach(o=>{const q=obstaclePoint(p,o);svg.append(obstacleGroup(o.type,q.x,q.y))});
-  const st=p[0];const ball=svgEl('circle',{cx:st[0],cy:st[1],r:2.8,fill:B[j][0],class:'physicsball','data-i':j});svg.append(ball);
-  return metrics(p,s.obs[j]);
- });
- box.appendChild(svg);
- const picks=document.createElement('div');picks.className='racepicks';B.forEach((b,j)=>{const p=document.createElement('button');p.innerHTML='<span style="color:'+b[0]+'">●</span><br>'+b[1];p.onclick=()=>{if(running)return;choice=j;[...picks.children].forEach((x,k)=>x.classList.toggle('picked',k===j));go.disabled=false};picks.append(p)});
- const go=document.createElement('button');go.className='racego';go.disabled=true;go.textContent='よそうした！　すたーと';go.onclick=()=>runRace(s,mets,box,svg);
+function levels(){game.innerHTML='<div class="racelevels"><div class="racehead">どの すてーじに する？</div><button data-l="easy">🌱<b>かんたん</b><small>おおきな さかを よく みよう</small></button><button data-l="normal">🌼<b>ふつう</b><small>くぎや かいてんぼうも あるよ</small></button><button data-l="hard">🔥<b>むずかしい</b><small>しかけが いっぱい！</small></button></div>';game.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{level=b.dataset.l;stage=0;show()})}
+function show(){
+ cancelAnimationFrame(raf);running=false;choice=-1;const st=makeStage(level,stage);game.innerHTML='';
+ const box=document.createElement('div');box.className='racebox gravityrace';box.innerHTML='<div class="racehead">'+({easy:'かんたん',normal:'ふつう',hard:'むずかしい'}[level])+'　'+(stage+1)+' / 20</div><div class="racehint">どの ぼーるが さいしょに したまで いくかな？</div>';
+ const svg=E('svg',{class:'raceworld gravityworld',viewBox:'0 0 100 100',preserveAspectRatio:'none'});
+ svg.append(E('rect',{x:3,y:4,width:94,height:91,rx:4,class:'machineback'}));
+ st.segs.forEach((s,k)=>{svg.append(E('line',{x1:s.x1,y1:s.y1,x2:s.x2,y2:s.y2,class:'machinebar','data-bar':k}))});
+ st.pegs.forEach(p=>svg.append(E('circle',{cx:p.x,cy:p.y,r:p.r,class:'machinepeg'})));
+ st.spins.forEach((p,k)=>{const g=E('g',{class:'machinespinner','data-spin':k});g.append(E('circle',{cx:p.x,cy:p.y,r:2.2,class:'spinaxle'}));g.append(E('line',{x1:p.x-p.len/2,y1:p.y,x2:p.x+p.len/2,y2:p.y,class:'spinbar'}));svg.append(g)});
+ svg.append(E('rect',{x:5,y:92,width:90,height:3,class:'finishfloor'}));
+ const balls=st.starts.map((x,j)=>{const b=E('circle',{cx:x,cy:9,r:2.7,fill:C[j][0],class:'physicsball','data-i':j});svg.append(b);return b});
+ box.append(svg);
+ const picks=document.createElement('div');picks.className='racepicks';C.forEach((b,j)=>{const p=document.createElement('button');p.innerHTML='<span style="color:'+b[0]+'">●</span><br>'+b[1];p.onclick=()=>{if(running)return;choice=j;[...picks.children].forEach((x,k)=>x.classList.toggle('picked',k===j));go.disabled=false};picks.append(p)});
+ const go=document.createElement('button');go.className='racego';go.disabled=true;go.textContent='よそうした！　おとす';go.onclick=()=>run(st,balls,box,svg);
  const msg=document.createElement('div');msg.className='racemsg';box.append(picks,go,msg);game.append(box);
 }
-function runRace(s,mets,box,svg){
+function closest(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l));return{x:x1+t*dx,y:y1+t*dy,dx,dy}}
+function run(st,els,box,svg){
  if(running||choice<0)return;running=true;box.querySelector('.racego').disabled=true;box.querySelectorAll('.racepicks button').forEach(x=>x.disabled=true);
- const states=mets.map(()=>({d:0,v:0.018,wait:0,hit:new Set(),done:false,time:0})),balls=[...svg.querySelectorAll('.physicsball')];let last=performance.now(),elapsed=0,finish=[];
- function tick(now){
-  let dt=Math.min(32,now-last);last=now;elapsed+=dt;
-  states.forEach((st,j)=>{
-   if(st.done)return;if(st.wait>0){st.wait-=dt;return}
-   const q=pointOn(s.paths[j],mets[j],st.d),rad=q.angle*Math.PI/180;
-   const gravity=Math.sin(rad)*0.000018;st.v=Math.max(.012,Math.min(.052,st.v+gravity*dt));st.v*=Math.pow(.9996,dt);st.d+=st.v*dt;
-   s.obs[j].forEach((o,k)=>{const key=j+'-'+k;if(st.hit.has(key))return;const op=obstaclePoint(s.paths[j],o),oq=pointOn(s.paths[j],mets[j],st.d);if(Math.hypot(op.x-oq.x,op.y-oq.y)<4){st.hit.add(key);st.wait=o.delay*22;if(o.type==='hill')st.v*=.55;if(o.type==='bridge')st.v*=.72;if(o.type==='gate')st.v*=.35;if(o.type==='spinner')st.v*=.3}});
-   if(st.d>=mets[j].total){st.d=mets[j].total;st.done=true;st.time=elapsed;finish.push(j)}
-   const pos=pointOn(s.paths[j],mets[j],st.d);
-   let px=pos.x,py=pos.y;
-   balls[j].setAttribute('cx',Math.max(3,Math.min(97,px)));balls[j].setAttribute('cy',Math.max(3,Math.min(97,py)));
+ const balls=st.starts.map((x,j)=>({x,y:9,vx:0,vy:0,done:false,t:0})),finish=[];let last=performance.now(),elapsed=0;
+ function tick(now){const dt=Math.min(24,now-last)/16.67;last=now;elapsed+=dt*16.67;
+  st.spins.forEach((sp,k)=>{sp.a+=.035*dt;const g=svg.querySelector('[data-spin="'+k+'"]');g.setAttribute('transform','rotate('+(sp.a*180/Math.PI)+' '+sp.x+' '+sp.y+')')});
+  balls.forEach((b,j)=>{if(b.done)return;b.vy+=.055*dt;b.vx*=Math.pow(.994,dt);b.vy*=Math.pow(.998,dt);b.x+=b.vx*dt;b.y+=b.vy*dt;
+   if(b.x<6){b.x=6;b.vx=Math.abs(b.vx)*.65}if(b.x>94){b.x=94;b.vx=-Math.abs(b.vx)*.65}
+   st.segs.forEach(s=>{const q=closest(b.x,b.y,s.x1,s.y1,s.x2,s.y2),dx=b.x-q.x,dy=b.y-q.y,d=Math.hypot(dx,dy),rr=3.6;if(d<rr){let nx=dx/(d||1),ny=dy/(d||1);if(d<.15){const L=Math.hypot(q.dx,q.dy);nx=-q.dy/L;ny=q.dx/L;if(ny>0){nx=-nx;ny=-ny}}b.x=q.x+nx*rr;b.y=q.y+ny*rr;const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=1.45*dot*nx;b.vy-=1.45*dot*ny}const L=Math.hypot(q.dx,q.dy);b.vx+=q.dx/L*.018*dt;b.vy+=q.dy/L*.018*dt}});
+   st.pegs.forEach(p=>{const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),rr=5;if(d<rr){const nx=dx/(d||1),ny=dy/(d||1);b.x=p.x+nx*rr;b.y=p.y+ny*rr;const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=1.65*dot*nx;b.vy-=1.65*dot*ny}}});
+   st.spins.forEach(p=>{const ca=Math.cos(p.a),sa=Math.sin(p.a),x1=p.x-ca*p.len/2,y1=p.y-sa*p.len/2,x2=p.x+ca*p.len/2,y2=p.y+sa*p.len/2,q=closest(b.x,b.y,x1,y1,x2,y2),dx=b.x-q.x,dy=b.y-q.y,d=Math.hypot(dx,dy);if(d<3.8){const nx=dx/(d||1),ny=dy/(d||1);b.x=q.x+nx*3.8;b.y=q.y+ny*3.8;const dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=1.5*dot*nx;b.vy-=1.5*dot*ny}b.vx+=-sa*.08;b.vy+=ca*.08}});
+   if(b.y>=91){b.done=true;b.t=elapsed;finish.push(j);b.y=91}els[j].setAttribute('cx',b.x);els[j].setAttribute('cy',b.y);
   });
-  if(states.every(x=>x.done)){running=false;finishRace(finish[0],box);return}raf=requestAnimationFrame(tick);
- }
- raf=requestAnimationFrame(tick);
+  if(balls.every(b=>b.done)){running=false;result(finish[0],box);return}raf=requestAnimationFrame(tick)
+ }raf=requestAnimationFrame(tick)
 }
-function finishRace(winner,box){
- const msg=box.querySelector('.racemsg'),w=B[winner];msg.innerHTML=(choice===winner?'🎉 せいかい！':'おしい！')+'　<b><span style="color:'+w[0]+'">●</span> '+w[1]+'が いちばん！</b><br><small>みちの ながさ・さか・しかけを もういちど みてみよう</small>';
- const n=document.createElement('button');n.className='racenext';n.textContent=stage===19?'こーすを えらぶ':'つぎの こーす';n.onclick=()=>{if(stage===19)chooseLevel();else{stage++;showStage()}};msg.append(n);
-}
-btn.onclick=()=>{playMenu.style.display='none';miniArea.style.display='block';miniArea.classList.remove('hide-mode','riddle-mode','maze-mode','math-mode','trace-mode','kanji-mode','clock-mode');miniArea.classList.add('race-mode');miniTitle.textContent='ころころ よそうれーす';start.style.display='none';gameMsg.style.display='none';chooseLevel()};
+function result(w,box){const m=box.querySelector('.racemsg');m.innerHTML=(choice===w?'🎉 せいかい！':'おしい！')+'　<b><span style="color:'+C[w][0]+'">●</span> '+C[w][1]+'が いちばん！</b><br><small>どこに ぶつかって どう おちたか みてみよう</small>';const n=document.createElement('button');n.className='racenext';n.textContent=stage===19?'こーすを えらぶ':'つぎの すてーじ';n.onclick=()=>{if(stage===19)levels();else{stage++;show()}};m.append(n)}
+btn.onclick=()=>{playMenu.style.display='none';miniArea.style.display='block';miniArea.classList.remove('hide-mode','riddle-mode','maze-mode','math-mode','trace-mode','kanji-mode','clock-mode');miniArea.classList.add('race-mode');miniTitle.textContent='ころころ よそうれーす';start.style.display='none';gameMsg.style.display='none';levels()};
 miniBack.addEventListener('click',()=>{cancelAnimationFrame(raf);running=false;miniArea.classList.remove('race-mode')});
 })();
