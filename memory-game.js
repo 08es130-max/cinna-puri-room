@@ -20,7 +20,7 @@ function begin(n){
  let pool=[all[0],all[1],...shuffle(all.slice(2)).slice(0,n-2)];
  const cards=shuffle(pool.flatMap(x=>[{...x,key:x.id+'a'},{...x,key:x.id+'b'}]));
  miniTitle.textContent='🃏 しんけいすいじゃく';
- game.innerHTML='<div class="memory-top"><span>おなじ えを みつけよう</span><b><span id="memoryLeft">'+n+'</span>くみ</b></div><div class="memory-grid memory-'+cards.length+'">'+cards.map((x,i)=>'<button class="memory-card" data-i="'+i+'" data-id="'+x.id+'"><span class="memory-back">？</span><span class="memory-face">'+x.html+'</span></button>').join('')+'</div>';
+ game.innerHTML='<div class="memory-top"><span>おなじ えを みつけよう</span><b><span id="memoryLeft">'+n+'</span>くみ</b></div><div class="memory-grid memory-'+cards.length+'">'+cards.map((x,i)=>'<button class="memory-card" data-i="'+i+'" data-id="'+x.id+'"><span class="memory-back">？</span><span class="memory-face '+(x.id==='cinna'||x.id==='puri'?'memory-character':'memory-fruit')+'">'+x.html+'</span></button>').join('')+'</div>';
  const cs=[...game.querySelectorAll('.memory-card')];
  cs.forEach(card=>card.onclick=()=>{
    if(lock||card.classList.contains('open')||card.classList.contains('matched'))return;
@@ -34,7 +34,7 @@ function begin(n){
  });
 }
 function finish(){
- game.insertAdjacentHTML('beforeend','<div class="memory-clear">🎉 ぜんぶ みつけた！<button id="memoryAgain">もういちど</button><button id="memoryLevel">なんいどを えらぶ</button></div>');
+ game.insertAdjacentHTML('beforeend','<div class="memory-clear"><div class="memory-clear-box">🎉 ぜんぶ みつけた！<button id="memoryAgain">もういちど</button><button id="memoryLevel">なんいどを えらぶ</button></div></div>');
  document.getElementById('memoryAgain').onclick=()=>begin(pairs);
  document.getElementById('memoryLevel').onclick=choose;
 }
