@@ -5,18 +5,19 @@ const all=[
  {id:'cinna',html:'<img src="./assets/cinnamoroll.webp" alt="しなもろーる">'},
  {id:'puri',html:'<img src="./assets/pompompurin.webp" alt="ぽむぽむぷりん">'},
  {id:'apple',html:'🍎'},{id:'banana',html:'🍌'},{id:'grape',html:'🍇'},{id:'strawberry',html:'🍓'},
- {id:'orange',html:'🍊'},{id:'melon',html:'🍈'},{id:'peach',html:'🍑'},{id:'cherry',html:'🍒'}
+ {id:'orange',html:'🍊'},{id:'melon',html:'🍈'},{id:'peach',html:'🍑'},{id:'cherry',html:'🍒'},
+ {id:'pineapple',html:'🍍'},{id:'watermelon',html:'🍉'},{id:'pear',html:'🍐'},{id:'lemon',html:'🍋'},{id:'kiwi',html:'🥝'}
 ];
 let opened=[],matched=0,lock=false,pairs=3;
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function choose(){
  miniArea.className='memory-mode';miniTitle.textContent='🃏 しんけいすいじゃく';start.style.display='none';gameMsg.style.display='none';
- game.innerHTML='<div class="memory-intro"><b>おなじ えを 2まい みつけよう！</b><div class="memory-levels"><button data-pairs="3">🌱 かんたん<br><small>6まい</small></button><button data-pairs="6">🌼 ふつう<br><small>12まい</small></button><button data-pairs="10">🔥 むずかしい<br><small>20まい</small></button></div></div>';
+ game.innerHTML='<div class="memory-intro"><b>おなじ えを 2まい みつけよう！</b><div class="memory-levels"><button data-pairs="6">🌱 かんたん<br><small>12まい</small></button><button data-pairs="10">🌼 ふつう<br><small>20まい</small></button><button data-pairs="15">🔥 むずかしい<br><small>30まい</small></button></div></div>';
  game.querySelectorAll('[data-pairs]').forEach(b=>b.onclick=()=>begin(Number(b.dataset.pairs)));
 }
 function begin(n){
  pairs=n;opened=[];matched=0;lock=false;
- let pool=n===3?[all[0],all[1],...shuffle(all.slice(2)).slice(0,1)]:n===6?[all[0],all[1],...shuffle(all.slice(2)).slice(0,4)]:all;
+ let pool=[all[0],all[1],...shuffle(all.slice(2)).slice(0,n-2)];
  const cards=shuffle(pool.flatMap(x=>[{...x,key:x.id+'a'},{...x,key:x.id+'b'}]));
  miniTitle.textContent='🃏 しんけいすいじゃく';
  game.innerHTML='<div class="memory-top"><span>おなじ えを みつけよう</span><b><span id="memoryLeft">'+n+'</span>くみ</b></div><div class="memory-grid memory-'+cards.length+'">'+cards.map((x,i)=>'<button class="memory-card" data-i="'+i+'" data-id="'+x.id+'"><span class="memory-back">？</span><span class="memory-face">'+x.html+'</span></button>').join('')+'</div>';
