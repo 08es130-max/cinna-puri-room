@@ -600,7 +600,7 @@ nav button{min-height:64px}
 #miniArea.memory-mode .memory-top>span{display:flex!important;align-items:baseline!important;gap:8px!important;white-space:nowrap!important}
 #miniArea.memory-mode .memory-top small{font-size:clamp(11px,2.8vw,14px)!important;color:#68777b;font-weight:800}
 #miniArea.memory-mode .memory-result{margin:8px 0 2px;font-size:clamp(17px,4.2vw,22px)}
-</style><meta name="deploy-revision" content="0925-version-sync"><style>
+</style><meta name="deploy-revision" content="0926-town-tap-fix"><style>
 /* 0.9.22 ファンシータウン */
 #life{height:calc(100dvh - 118px);overflow:hidden;padding:0}#life.active{display:flex;flex-direction:column}.town-head{flex:none;text-align:center;padding:4px 4px 8px}.town-head b{display:block;font-size:21px}.town-head span{font-size:14px;color:#766f68;font-weight:700}
 .town-map{position:relative;flex:1;min-height:0;overflow:hidden;border:3px solid #f3d9e5;border-radius:25px;background:linear-gradient(#cceeff 0 19%,#c9edb5 19% 100%);box-shadow:inset 0 0 0 4px #fff}
@@ -843,17 +843,17 @@ $$('.outing').forEach(b=>b.onclick=()=>openOuting(b.dataset.place));outingHome.o
   }
  };
 }
-function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.25',APP_CACHE='0925';let appReloading=false;document.getElementById('headVersion').textContent='ばーじょん '+APP_VERSION;
+function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.26',APP_CACHE='0926';let appReloading=false;document.getElementById('headVersion').textContent='ばーじょん '+APP_VERSION;
 async function hardRefreshPWA(){
- if(sessionStorage.getItem('pwaRescue0925'))return false;
+ if(sessionStorage.getItem('pwaRescue0926'))return false;
  try{
   const r=await fetch('./version.json?rescue='+Date.now(),{cache:'no-store'});
   if(!r.ok)return false;const d=await r.json();
-  if(d.version==='0.9.25'){
-   sessionStorage.setItem('pwaRescue0925','1');
+  if(d.version==='0.9.26'){
+   sessionStorage.setItem('pwaRescue0926','1');
    if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(x=>x.unregister().catch(()=>false)))}
    if('caches'in window){const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='nakayoshi-kana-strokes-v1').map(k=>caches.delete(k)))}
-   location.replace('./?fresh=0925-'+Date.now());return true;
+   location.replace('./?fresh=0926-'+Date.now());return true;
   }
  }catch(e){}return false;
 }
@@ -890,7 +890,9 @@ const routes={
  sea:[[50,88],[50,82],[61,82],[63,80]]
 };let moving=false,current=[50,88];
 function walk(place){if(moving||!routes[place])return;moving=true;tip.textContent=names[place]+'へ しゅっぱつ！';friends.classList.add('walking');const path=routes[place].slice();let i=0;function next(){if(i>=path.length){friends.classList.remove('walking');current=pos[place];moving=false;tip.textContent=names[place]+'に ついたよ！';setTimeout(()=>openFacility(place),180);return}const p=path[i++];friends.style.setProperty('left',p[0]+'%','important');friends.style.setProperty('top',p[1]+'%','important');setTimeout(next,360)}requestAnimationFrame(()=>requestAnimationFrame(next))}
-map.addEventListener('pointerup',e=>{const b=e.target.closest('.map-place');if(!b||moving)return;e.preventDefault();e.stopPropagation();walk(b.dataset.place)});
+function handlePlaceTap(e){const t=e.target instanceof Element?e.target:null;const b=t&&t.closest('.map-place');if(!b||!map.contains(b)||moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(!routes[place])return;tip.textContent=names[place]+'へ しゅっぱつ！';walk(place)}
+map.addEventListener('click',handlePlaceTap,{passive:false});
+document.querySelectorAll('.map-place').forEach(b=>{b.style.touchAction='manipulation';b.addEventListener('touchend',e=>{if(moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(!routes[place])return;tip.textContent=names[place]+'へ しゅっぱつ！';walk(place)},{passive:false})});
 function base(place,text){full.className='outing-full facility-mode show';document.body.style.overflow='hidden';fullImg.style.display='block';fullImg.src=imgs[place];fullTitle.textContent=names[place];fullText.textContent=text;fullChoices.innerHTML='';home.textContent='🗺️ まちに もどる';full.scrollTop=0}
 function openFacility(place){
  if(place==='nursery'){base(place,'つみきで あそぼう！ ゆびで うごかして すきなものを つくってね。');showBlocks();return}
