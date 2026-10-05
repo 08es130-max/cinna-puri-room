@@ -882,19 +882,14 @@ const map=document.getElementById('townMap'),friends=document.getElementById('to
 if(!map||!friends)return;
 const names={park:'こうえん',nursery:'ようちえん',amusement:'ゆうえんち',cafe:'かふぇ',sea:'うみ',shop:'おかいもの'};
 const imgs={park:'./assets/2DF8B7E4-73D2-446B-99A4-9A1E22BB6202.png',nursery:'./assets/6424B19F-0AAB-4D30-8C74-155B7B0F8BBA.png',amusement:'./assets/AF3E8D5C-C7BF-43B0-8121-727660C9F7CF.png',cafe:'./assets/EA046BAE-4090-43C4-8343-40BCEA14B3A8.png',sea:'./assets/F162BFFB-2011-4796-8BC7-8D23F3BD39A2.png',shop:'./assets/FE355319-6C56-4D89-BC62-4F00AE16C71D.png'};
-const pos={park:[30,50],nursery:[62,50],amusement:[62,35],cafe:[31,80],sea:[63,80],shop:[31,35]};
-const routes={
- shop:[[50,88],[50,82],[50,68],[50,54],[50,39],[40,39],[31,35]],
- amusement:[[50,88],[50,74],[50,58],[50,39],[62,39],[62,35]],
- park:[[50,88],[50,72],[50,55],[40,54],[30,50]],
- nursery:[[50,88],[50,72],[50,55],[60,54],[62,50]],
- cafe:[[50,88],[50,82],[40,82],[31,80]],
- sea:[[50,88],[50,82],[61,82],[63,80]]
-};let moving=false,current=[50,88];
-function walk(place){if(moving||!routes[place])return;moving=true;tip.textContent=names[place]+'へ しゅっぱつ！';friends.classList.add('walking');const path=routes[place].slice();let i=0;function next(){if(i>=path.length){friends.classList.remove('walking');current=pos[place];moving=false;tip.textContent=names[place]+'に ついたよ！';setTimeout(()=>openFacility(place),180);return}const p=path[i++];friends.style.setProperty('left',p[0]+'%','important');friends.style.setProperty('top',p[1]+'%','important');setTimeout(next,360)}requestAnimationFrame(()=>requestAnimationFrame(next))}
-function handlePlaceTap(e){const t=e.target instanceof Element?e.target:null;const b=t&&t.closest('.map-place');if(!b||!map.contains(b)||moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(!routes[place])return;tip.textContent=names[place]+'へ しゅっぱつ！';walk(place)}
+const nodes={start:[50,94],low:[50,77],bridge:[50,64],mid:[50,52],top:[50,31],shop:[27,27],amusement:[74,29],park:[27,51],nursery:[74,52],cafe:[27,78],sea:[74,78]};
+const edges={start:['low'],low:['start','bridge','cafe','sea'],bridge:['low','mid'],mid:['bridge','top','park','nursery'],top:['mid','shop','amusement'],shop:['top'],amusement:['top'],park:['mid'],nursery:['mid'],cafe:['low'],sea:['low']};
+let moving=false,currentNode='start';
+function shortestPath(from,to){const q=[[from]],seen=new Set([from]);while(q.length){const path=q.shift(),n=path[path.length-1];if(n===to)return path;for(const nx of edges[n]||[]){if(!seen.has(nx)){seen.add(nx);q.push([...path,nx])}}}return[from,to]}
+function walk(place){if(moving||!nodes[place])return;moving=true;tip.textContent=names[place]+'へ しゅっぱつ！';friends.classList.add('walking');const path=shortestPath(currentNode,place).slice(1);let i=0;function next(){if(i>=path.length){friends.classList.remove('walking');currentNode=place;moving=false;tip.textContent=names[place]+'に ついたよ！';setTimeout(()=>openFacility(place),180);return}const p=nodes[path[i++]];friends.style.setProperty('left',p[0]+'%','important');friends.style.setProperty('top',p[1]+'%','important');setTimeout(next,310)}requestAnimationFrame(()=>requestAnimationFrame(next))}
+function handlePlaceTap(e){const t=e.target instanceof Element?e.target:null,b=t&&t.closest('.map-place');if(!b||!map.contains(b)||moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(nodes[place])walk(place)}
 map.addEventListener('click',handlePlaceTap,{passive:false});
-document.querySelectorAll('.map-place').forEach(b=>{b.style.touchAction='manipulation';b.addEventListener('touchend',e=>{if(moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(!routes[place])return;tip.textContent=names[place]+'へ しゅっぱつ！';walk(place)},{passive:false})});
+document.querySelectorAll('.map-place').forEach(b=>b.addEventListener('touchend',e=>{if(moving)return;e.preventDefault();e.stopPropagation();const place=b.dataset.place;if(nodes[place])walk(place)},{passive:false}));
 function base(place,text){full.className='outing-full facility-mode show';document.body.style.overflow='hidden';fullImg.style.display='block';fullImg.src=imgs[place];fullTitle.textContent=names[place];fullText.textContent=text;fullChoices.innerHTML='';home.textContent='🗺️ まちに もどる';full.scrollTop=0}
 function openFacility(place){
  if(place==='nursery'){base(place,'つみきで あそぼう！ ゆびで うごかして すきなものを つくってね。');showBlocks();return}
