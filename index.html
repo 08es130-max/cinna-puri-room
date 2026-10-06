@@ -620,7 +620,13 @@ nav button{min-height:64px}
 .castle-palette:has(button:nth-child(2):last-child) button{height:104px!important}
 .castle-palette:has(button:nth-child(2):last-child) button .part-preview{height:72px!important;width:105px!important;flex-basis:72px!important;transform:none!important}
 .castle-palette:has(button:nth-child(2):last-child) button small{font-size:12px!important;height:20px!important;line-height:20px!important}
-</style><meta name="deploy-revision" content="0965-castle-palette-grid"><style>
+/* 0.9.66 image-only castle palette */
+.castle-palette button small,.castle-palette button .part-label{display:none!important}
+.castle-palette button{justify-content:center!important;padding:2px!important}
+.castle-palette button .part-preview{flex:0 0 45px!important;width:86px!important;height:45px!important;transform:scale(.40)!important;margin:0!important}
+.castle-palette button .part-preview.sand-cinna-img,.castle-palette button .part-preview.sand-purin-img{width:66px!important;height:45px!important;transform:none!important}
+.castle-palette:has(button:nth-child(2):last-child) button .part-preview{width:125px!important;height:94px!important;flex-basis:94px!important;transform:none!important}
+</style><meta name="deploy-revision" content="0966-castle-image-only"><style>
 /* 0.9.22 ファンシータウン */
 #life{height:calc(100dvh - 118px);overflow:hidden;padding:0}#life.active{display:flex;flex-direction:column}.town-head{flex:none;text-align:center;padding:4px 4px 8px}.town-head b{display:block;font-size:21px}.town-head span{font-size:14px;color:#766f68;font-weight:700}
 .town-map{position:relative;flex:1;min-height:0;overflow:hidden;border:3px solid #f3d9e5;border-radius:25px;background:linear-gradient(#cceeff 0 19%,#c9edb5 19% 100%);box-shadow:inset 0 0 0 4px #fff}
@@ -865,17 +871,17 @@ $$('.outing').forEach(b=>b.onclick=()=>openOuting(b.dataset.place));outingHome.o
   }
  };
 }
-function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.65',APP_CACHE='0965';let appReloading=false;document.getElementById('headVersion').textContent='ばーじょん '+APP_VERSION;
+function runTidy(){game.innerHTML='<div class="tidybox">🧺</div>';let left=6;const toys=['🧸','⚽','🪀','🚗','🧩','📖'];toys.forEach((t,i)=>{let q=document.createElement('button');q.className='tidytoy';q.textContent=t;q.style.left=(5+(i%3)*31)+'%';q.style.top=(5+Math.floor(i/3)*30)+'%';q.onclick=()=>{q.remove();if(--left===0)done('おかたづけ できたよ！')};game.appendChild(q)})}function runCatch(){game.innerHTML='';score=0;let x=50,ended=false;let hud=document.createElement('div');hud.className='catchscore';hud.innerHTML='🍪 <span>0</span>こ';game.appendChild(hud);let c=document.createElement('div');c.className='catcher';c.textContent='🧺';c.style.left=x+'%';game.appendChild(c);const move=e=>{const r=game.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;x=Math.max(8,Math.min(92,px/r.width*100));c.style.left=x+'%'};game.onpointermove=move;game.ontouchmove=e=>{e.preventDefault();move(e)};let ticks=0;miniRun=setInterval(()=>{ticks++;let q=document.createElement('div');q.className='falling';q.textContent=['🍪','🍩','🍮','🍰','🍬'][Math.floor(Math.random()*5)];let qx=7+Math.random()*86,y=-10,speed=8+Math.random()*4;q.style.left=qx+'%';q.style.top=y+'px';game.appendChild(q);let fall=setInterval(()=>{if(ended){clearInterval(fall);q.remove();return}y+=speed;q.style.top=y+'px';if(y>game.clientHeight-65){if(Math.abs(qx-x)<11){score++;hud.querySelector('span').textContent=score;hud.animate([{transform:'translateX(-50%) scale(1)'},{transform:'translateX(-50%) scale(1.25)'},{transform:'translateX(-50%) scale(1)'}],{duration:220})}q.remove();clearInterval(fall)}},38);if(ticks>=30){clearInterval(miniRun);miniRun=null;setTimeout(()=>{ended=true;game.querySelectorAll('.falling').forEach(x=>x.remove());gameMsg.textContent=score+'こ きゃっち できたよ！';start.disabled=false},1800)}},450)};start.onclick=()=>{if(miniRun)return;start.disabled=true;gameMsg.textContent='';({tap:runTap,catch:runCatch,bubble:runBubble,hide:runHide}[mini]||runTap)()};let h=new Date().getHours();timeMsg.textContent=h<10?'おはよう。ふたりもおきてきました。':h>=20?'よるのおへや。ふたりともちょっとねむそうです。':'ふたりともげんきにすごしています。';const APP_VERSION='0.9.66',APP_CACHE='0966';let appReloading=false;document.getElementById('headVersion').textContent='ばーじょん '+APP_VERSION;
 async function hardRefreshPWA(){
- if(sessionStorage.getItem('pwaRescue0965'))return false;
+ if(sessionStorage.getItem('pwaRescue0966'))return false;
  try{
   const r=await fetch('./version.json?rescue='+Date.now(),{cache:'no-store'});
   if(!r.ok)return false;const d=await r.json();
-  if(d.version==='0.9.65'){
-   sessionStorage.setItem('pwaRescue0965','1');
+  if(d.version==='0.9.66'){
+   sessionStorage.setItem('pwaRescue0966','1');
    if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(x=>x.unregister().catch(()=>false)))}
    if('caches'in window){const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='nakayoshi-kana-strokes-v1').map(k=>caches.delete(k)))}
-   location.replace('./?fresh=0965-'+Date.now());return true;
+   location.replace('./?fresh=0966-'+Date.now());return true;
   }
  }catch(e){}return false;
 }
